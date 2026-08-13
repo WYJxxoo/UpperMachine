@@ -68,6 +68,7 @@ public sealed class ScanController : IDisposable
     {
         Wait,
         Idle,
+        Drop,
         Scan,
         Run,
         WorkFinished,
@@ -629,15 +630,8 @@ public sealed class ScanController : IDisposable
         await Task.Delay(800, ct);
     }
 
-    private async Task Scan(int presentPosition, SerialPort controlPort, SerialPort dataPort, CancellationToken ct)
+    private async Task Scan(int presentPosition, SerialPort dataPort, CancellationToken ct)
     {
-        if (_penRaised && !string.IsNullOrWhiteSpace(DropCommand))
-        {
-            SendCode(controlPort, DropCommand, "Control");
-            _penRaised = false;
-            await Task.Delay(280, ct);
-        }
-
         double finalVoltage = -1.0;
         bool isDataValid = false;
         int retryCount = 0;
@@ -840,18 +834,13 @@ public sealed class ScanController : IDisposable
         }
 
         SendCode(controlPort, "G92 X0 Y0 Z0", "控制");
-        _workState = WorkState.Run;
+        _workState = _scanSettings.NextPosition == 0 ? WorkState.Drop : WorkState.Run;
         _scanCompleteState = CompleteState.No;
         SetState("扫描中");
 
         while (true)
         {
             ct.ThrowIfCancellationRequested();
-
-            if (_scanSettings.NextPosition == 0)
-            {
-                _workState = WorkState.Scan;
-            }
 
             switch (_workState)
             {
@@ -870,6 +859,25 @@ public sealed class ScanController : IDisposable
                     else
                     {
                         await Task.Delay(200, ct);
+                        _workState = WorkState.Drop;
+                    }
+                    break;
+
+                case WorkState.Drop:
+                    if (_penRaised && !string.IsNullOrWhiteSpace(DropCommand))
+                    {
+                        SendCode(controlPort, DropCommand, "控制");
+                        _penRaised = false;
+                        await Task.Delay(100, ct);
+                    }
+
+                    GrblState dropState = await IsRunState(ct);
+                    if (dropState != GrblState.Idle)
+                    {
+                        await Task.Delay(25, ct);
+                    }
+                    else
+                    {
                         _workState = WorkState.Scan;
                     }
                     break;
@@ -888,7 +896,7 @@ public sealed class ScanController : IDisposable
                     if (_scanCompleteState == CompleteState.No)
                     {
                         int presentPosition = _scanSettings.NextPosition;
-                        await Scan(presentPosition, controlPort, dataPort, ct);
+                        await Scan(presentPosition, dataPort, ct);
                     }
                     else
                     {
