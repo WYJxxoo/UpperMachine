@@ -48,8 +48,8 @@ public partial class ProbeControlWindow : Window
 
     private void LoadSettingsToUi()
     {
-        RaiseCommandTextBox.Text = string.IsNullOrWhiteSpace(_settings.RaiseCommand) ? "$J=G91 Z-16 F1000" : _settings.RaiseCommand;
-        DropCommandTextBox.Text = string.IsNullOrWhiteSpace(_settings.DropCommand) ? "$J=G91 Z5 F500" : _settings.DropCommand;
+        RaiseCommandTextBox.Text = string.IsNullOrWhiteSpace(_settings.RaiseCommand) ? "$J=G91 Z-10 F1500" : _settings.RaiseCommand;
+        DropCommandTextBox.Text = string.IsNullOrWhiteSpace(_settings.DropCommand) ? "$J=G91 Z10 F500" : _settings.DropCommand;
         HoldCommandTextBox.Text = _settings.HoldCommand;
         StepTextBox.Text = _settings.Step;
         FeedTextBox.Text = _settings.Feed;

@@ -102,6 +102,8 @@ public sealed class ScanController : IDisposable
     private ScanSettings? _scanSettings;
     private CompleteState _scanCompleteState;
     private WorkState _workState;
+    // 抬笔/落笔使用 G91 相对位移，重复执行会累积越界，需按状态只发一次。
+    private bool _penRaised = true;
     private bool _disposed;
 
     private const double VoltageUpperLimit = 10.0;
@@ -135,9 +137,9 @@ public sealed class ScanController : IDisposable
 
     public int HoldIntervalMs { get; set; } = 100;
 
-    public string DropCommand { get; set; } = "$J=G91Z0F1500";
+    public string DropCommand { get; set; } = "$J=G91 Z10 F500";
 
-    public string RaiseCommand { get; set; } = "$J=G90Z-10F1500";
+    public string RaiseCommand { get; set; } = "$J=G91 Z-10 F1500";
 
     public string FilterAlgorithm { get; set; } = ScanParameter.AverageFilter;
 
@@ -611,9 +613,10 @@ public sealed class ScanController : IDisposable
             return;
         }
 
-        if (settings.NextPosition > 0 && !string.IsNullOrWhiteSpace(RaiseCommand))
+        if (settings.NextPosition > 0 && !_penRaised && !string.IsNullOrWhiteSpace(RaiseCommand))
         {
             SendCode(controlPort, RaiseCommand, "控制");
+            _penRaised = true;
             await Task.Delay(280, ct);
         }
 
@@ -628,9 +631,10 @@ public sealed class ScanController : IDisposable
 
     private async Task Scan(int presentPosition, SerialPort controlPort, SerialPort dataPort, CancellationToken ct)
     {
-        if (!string.IsNullOrWhiteSpace(DropCommand))
+        if (_penRaised && !string.IsNullOrWhiteSpace(DropCommand))
         {
             SendCode(controlPort, DropCommand, "Control");
+            _penRaised = false;
             await Task.Delay(280, ct);
         }
 

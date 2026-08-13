@@ -500,9 +500,9 @@
                                     <StackPanel>
                                         <TextBlock Style="{StaticResource SectionTitleStyle}" Text="控制与指令" />
                                         <Label Content="抬笔命令" />
-                                        <TextBox x:Name="RaiseCommandTextBox" Text="$J=G91 Z-16 F1000" />
+                                        <TextBox x:Name="RaiseCommandTextBox" Text="$J=G91 Z-10 F1500" />
                                         <Label Content="落笔命令" />
-                                        <TextBox x:Name="DropCommandTextBox" Text="$J=G91 Z5 F500" />
+                                        <TextBox x:Name="DropCommandTextBox" Text="$J=G91 Z10 F500" />
                                         <Label Content="保持命令" />
                                         <TextBox x:Name="HoldCommandTextBox" Text="$J=G90 Z0.0 F500" />
                                         <Label Content="手动指令" />
