@@ -1,0 +1,49 @@
+<Window x:Class="UpperMachine.SplashWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="启动中"
+        Width="760"
+        Height="400"
+        WindowStartupLocation="CenterScreen"
+        WindowStyle="None"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        AllowsTransparency="True"
+        Background="Transparent"
+        Topmost="True">
+    <Border Margin="12"
+            Padding="24"
+            Background="#0B1117"
+            BorderBrush="#2E6C63"
+            BorderThickness="1.2"
+            CornerRadius="24">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <Border Background="#111922"
+                    BorderBrush="#2C3E4D"
+                    BorderThickness="1"
+                    CornerRadius="18">
+                <Image Source="Assets/splash-logo.png"
+                       Stretch="Uniform"
+                       Margin="10" />
+            </Border>
+
+            <StackPanel Grid.Row="1" Margin="0,18,0,0">
+                <ProgressBar Height="8"
+                             IsIndeterminate="True"
+                             Foreground="#5ADAB1"
+                             Background="#1A2530"
+                             BorderThickness="0" />
+                <TextBlock Margin="0,12,0,0"
+                           HorizontalAlignment="Center"
+                           Foreground="#C2D0DC"
+                           FontSize="14"
+                           Text="正在加载界面与设备控制模块..." />
+            </StackPanel>
+        </Grid>
+    </Border>
+</Window>
