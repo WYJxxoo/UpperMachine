@@ -6,6 +6,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Media3D;
+using System.Windows.Threading;
 using UpperMachine.Models;
 using UpperMachine.Services;
 using UpperMachine.ViewModels;
@@ -15,6 +16,9 @@ namespace UpperMachine;
 public partial class MainWindow : Window
 {
     private const double SurfaceHeightUnit = 8.0;
+    private const double SurfaceVoltageMax = 10.0;
+    private const int MaxLogLines = 2000;
+    private const int SurfaceColorBuckets = 48;
 
     private readonly ObservableCollection<PointRowViewModel> _pointRows = new();
     private readonly ObservableCollection<ScanParameterPreset> _scanPresets = new();
@@ -29,9 +33,8 @@ public partial class MainWindow : Window
     private ScanPlanInfo? _scanPlan;
     private double[,]? _heatmapData;
     private DateTime _lastPlotRefresh = DateTime.MinValue;
-    private PerspectiveCamera? _surfaceCamera;
-    private AxisAngleRotation3D? _surfaceTiltRotation;
-    private AxisAngleRotation3D? _surfaceSpinRotation;
+    private DateTime _lastGridScroll = DateTime.MinValue;
+    private DateTime _lastSurfaceRebuild = DateTime.MinValue;
     private ScaleTransform3D? _surfaceHeightScale;
     private ScanParameter? _lastScanParameter;
     private bool _analysisButtonAdded;
@@ -424,7 +427,7 @@ public partial class MainWindow : Window
     private void ConfigureControllerEvents()
     {
         _scanController.LogReceived += (_, message) =>
-            Dispatcher.InvokeAsync(() => AppendLog(message));
+            Dispatcher.InvokeAsync(() => AppendLog(message), DispatcherPriority.Background);
 
         _scanController.StateChanged += (_, state) =>
             Dispatcher.InvokeAsync(() => StateTextBlock.Text = state);
@@ -440,6 +443,8 @@ public partial class MainWindow : Window
             {
                 AppendLog(args.Message);
                 RenderVisuals(force: true);
+                RebuildSurface();
+                SurfaceViewport.ZoomExtents(0);
                 if (!args.Cancelled)
                 {
                     MessageBox.Show(args.Message, "扫描完成", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -450,16 +455,9 @@ public partial class MainWindow : Window
     private void InitializeThreeDScene()
     {
         _surfaceHeightScale = new ScaleTransform3D(1, HeightScaleSlider.Value, 1);
-        _surfaceTiltRotation = new AxisAngleRotation3D(new Vector3D(1, 0, 0), TiltSlider.Value);
-        _surfaceSpinRotation = new AxisAngleRotation3D(new Vector3D(0, 1, 0), RotationSlider.Value);
+        _surfaceDataGroup.Transform = _surfaceHeightScale;
 
-        Transform3DGroup transforms = new();
-        transforms.Children.Add(_surfaceHeightScale);
-        transforms.Children.Add(new RotateTransform3D(_surfaceTiltRotation));
-        transforms.Children.Add(new RotateTransform3D(_surfaceSpinRotation));
-        _surfaceDataGroup.Transform = transforms;
-
-        _surfaceScene.Children.Add(new AmbientLight(Color.FromRgb(72, 84, 96)));
+        _surfaceScene.Children.Add(new AmbientLight(Color.FromRgb(90, 100, 110)));
         _surfaceScene.Children.Add(new DirectionalLight(Color.FromRgb(255, 244, 224), new Vector3D(-1, -1.6, -1.2)));
         _surfaceScene.Children.Add(new DirectionalLight(Color.FromRgb(120, 186, 255), new Vector3D(1, -0.7, 0.3)));
         _surfaceScene.Children.Add(_surfaceDataGroup);
@@ -471,17 +469,6 @@ public partial class MainWindow : Window
 
         SurfaceViewport.Children.Clear();
         SurfaceViewport.Children.Add(sceneVisual);
-
-        _surfaceCamera = new PerspectiveCamera
-        {
-            FieldOfView = 46,
-            UpDirection = new Vector3D(0, 1, 0),
-            NearPlaneDistance = 1,
-            FarPlaneDistance = 5000,
-        };
-
-        SurfaceViewport.Camera = _surfaceCamera;
-        UpdateSurfaceCamera();
     }
 
     private void RefreshPortList()
@@ -548,7 +535,8 @@ public partial class MainWindow : Window
         ProgressTextBlock.Text = $"0 / {_pointRows.Count}";
         LastVoltageTextBlock.Text = "-- V";
         LastPointTextBlock.Text = "(0.00, 0.00)";
-        UpdateSurfaceCamera();
+        ResetSurface();
+        SurfaceViewport.ZoomExtents(0);
         RenderVisuals(force: true);
     }
 
@@ -559,17 +547,32 @@ public partial class MainWindow : Window
             return;
         }
 
-        _pointRows[args.Index].Voltage = args.Point.Voltage;
-        _pointRows[args.Index].Channel1Voltage = args.Point.Channel1Voltage;
-        _pointRows[args.Index].Channel2Voltage = args.Point.Channel2Voltage;
-        _pointRows[args.Index].Channel3Voltage = args.Point.Channel3Voltage;
-        _pointRows[args.Index].Channel4Voltage = args.Point.Channel4Voltage;
-        RebuildHeatmapData();
+        PointRowViewModel row = _pointRows[args.Index];
+        row.Voltage = args.Point.Voltage;
+        row.Channel1Voltage = args.Point.Channel1Voltage;
+        row.Channel2Voltage = args.Point.Channel2Voltage;
+        row.Channel3Voltage = args.Point.Channel3Voltage;
+        row.Channel4Voltage = args.Point.Channel4Voltage;
+        UpdateHeatmapCells(row);
+
+        // 3D 曲面采用节流重建：单网格合并后重建开销已大幅降低，
+        // 仍按固定间隔刷新，既保留实时感，又避免每个点都触发完整网格重建。
+        if (DateTime.Now - _lastSurfaceRebuild >= TimeSpan.FromMilliseconds(500))
+        {
+            _lastSurfaceRebuild = DateTime.Now;
+            RebuildSurface();
+        }
 
         ProgressTextBlock.Text = $"{args.Index + 1} / {_pointRows.Count}";
         LastVoltageTextBlock.Text = args.Point.Voltage >= 0 ? $"{args.Point.Voltage:F4} V" : "-- V";
         LastPointTextBlock.Text = $"({args.Point.X:F2}, {args.Point.Y:F2})";
-        PointsDataGrid.ScrollIntoView(_pointRows[args.Index]);
+
+        if (DateTime.Now - _lastGridScroll >= TimeSpan.FromMilliseconds(300))
+        {
+            _lastGridScroll = DateTime.Now;
+            PointsDataGrid.ScrollIntoView(row);
+        }
+
         RenderVisuals(force: false);
     }
 
@@ -582,7 +585,6 @@ public partial class MainWindow : Window
 
         _lastPlotRefresh = DateTime.Now;
         RenderHeatmap();
-        RenderThreeDSurface();
     }
 
     private void RenderHeatmap()
@@ -621,72 +623,90 @@ public partial class MainWindow : Window
         HeatmapPlot.Refresh();
     }
 
-    private void RenderThreeDSurface()
+    private void ResetSurface()
     {
         _surfaceDataGroup.Children.Clear();
-        (double spanX, double spanZ) = GetSurfaceSpan();
-        _surfaceDataGroup.Children.Add(CreateBasePlateModel(spanX, spanZ));
-
         if (_scanPlan is null)
         {
             return;
         }
 
-        PointData[] validPoints = GetRenderedPoints()
-            .Where(point => point.Voltage >= 0 && !double.IsNaN(point.Voltage))
-            .ToArray();
+        (double spanX, double spanZ) = GetSurfaceSpan();
+        _surfaceDataGroup.Children.Add(CreateBasePlateModel(spanX, spanZ));
+    }
 
-        if (validPoints.Length == 0)
+    private void RebuildSurface()
+    {
+        if (_scanPlan is null)
         {
             return;
         }
 
-        double[] validValues = validPoints.Select(point => point.Voltage).ToArray();
-        double minVoltage = validValues.Min();
-        double maxVoltage = validValues.Max();
-        if (Math.Abs(maxVoltage - minVoltage) < 0.0001)
-        {
-            maxVoltage = minVoltage + 1;
-        }
+        ResetSurface();
 
         double markerSize = Math.Max(_scanPlan.Step * 0.28, 0.8);
+        Dictionary<Color, MeshGeometry3D> buckets = new();
+        ScanParameter parameter = CurrentRenderParameter;
 
-        foreach (PointData point in validPoints)
+        foreach (PointRowViewModel row in _pointRows)
         {
-            double centeredX = point.X - (_scanPlan.MinX + _scanPlan.MaxX / 2.0);
-            double centeredZ = point.Y - (_scanPlan.MinY + _scanPlan.MaxY / 2.0);
-            double height = NormalizeVoltage(point.Voltage) * SurfaceHeightUnit;
-            Color markerColor = InterpolateSurfaceColor((point.Voltage - minVoltage) / (maxVoltage - minVoltage));
-            _surfaceDataGroup.Children.Add(CreateMarkerCubeModel(centeredX, centeredZ, height, markerSize, markerColor));
+            AddMarkerToBuckets(buckets, row.X, row.Y, row.Voltage, markerSize);
+
+            if (string.Equals(parameter.Channel2Mode, ScanParameter.ChannelModeAuxScan, StringComparison.OrdinalIgnoreCase))
+            {
+                AddMarkerToBuckets(buckets, row.X + parameter.Channel2OffsetX, row.Y + parameter.Channel2OffsetY, row.Channel2Voltage, markerSize);
+            }
+
+            if (string.Equals(parameter.Channel3Mode, ScanParameter.ChannelModeAuxScan, StringComparison.OrdinalIgnoreCase))
+            {
+                AddMarkerToBuckets(buckets, row.X + parameter.Channel3OffsetX, row.Y + parameter.Channel3OffsetY, row.Channel3Voltage, markerSize);
+            }
+
+            if (string.Equals(parameter.Channel4Mode, ScanParameter.ChannelModeAuxScan, StringComparison.OrdinalIgnoreCase))
+            {
+                AddMarkerToBuckets(buckets, row.X + parameter.Channel4OffsetX, row.Y + parameter.Channel4OffsetY, row.Channel4Voltage, markerSize);
+            }
         }
+
+        foreach ((Color color, MeshGeometry3D mesh) in buckets)
+        {
+            if (mesh.Positions.Count == 0)
+            {
+                continue;
+            }
+
+            _surfaceDataGroup.Children.Add(CreateColoredModel(mesh, color));
+        }
+    }
+
+    private void AddMarkerToBuckets(Dictionary<Color, MeshGeometry3D> buckets, double x, double y, double voltage, double markerSize)
+    {
+        if (double.IsNaN(voltage) || voltage < 0)
+        {
+            return;
+        }
+
+        Color color = QuantizeSurfaceColor(voltage / SurfaceVoltageMax);
+        if (!buckets.TryGetValue(color, out MeshGeometry3D? mesh))
+        {
+            mesh = new MeshGeometry3D();
+            buckets.Add(color, mesh);
+        }
+
+        double centeredX = x - (_scanPlan.MinX + _scanPlan.MaxX / 2.0);
+        double centeredZ = y - (_scanPlan.MinY + _scanPlan.MaxY / 2.0);
+        double height = NormalizeVoltage(voltage) * SurfaceHeightUnit;
+        AddCubeToMesh(mesh, centeredX, centeredZ, height, markerSize);
     }
 
     private void UpdateSurfaceTransform()
     {
-        if (_surfaceTiltRotation is null || _surfaceSpinRotation is null || _surfaceHeightScale is null)
+        if (_surfaceHeightScale is null)
         {
             return;
         }
 
-        _surfaceTiltRotation.Angle = TiltSlider.Value;
-        _surfaceSpinRotation.Angle = RotationSlider.Value;
         _surfaceHeightScale.ScaleY = HeightScaleSlider.Value;
-    }
-
-    private void UpdateSurfaceCamera()
-    {
-        if (_surfaceCamera is null)
-        {
-            return;
-        }
-
-        (double spanX, double spanZ) = GetSurfaceSpan();
-        double span = Math.Max(Math.Max(spanX, spanZ), 60);
-        double cameraY = span * 1.45;
-        double cameraZ = span * 2.25;
-
-        _surfaceCamera.Position = new Point3D(0, cameraY, cameraZ);
-        _surfaceCamera.LookDirection = new Vector3D(0, -cameraY * 0.7, -cameraZ);
     }
 
     private (double SpanX, double SpanZ) GetSurfaceSpan()
@@ -706,53 +726,46 @@ public partial class MainWindow : Window
         return _heatmapData[row, column];
     }
 
-    private IEnumerable<PointData> GetRenderedPoints()
-    {
-        IEnumerable<PointData> basePoints = _pointRows.Select(point => new PointData
-        {
-            Order = point.Order,
-            X = point.X,
-            Y = point.Y,
-            Voltage = point.Voltage,
-            Channel1Voltage = point.Channel1Voltage,
-            Channel2Voltage = point.Channel2Voltage,
-            Channel3Voltage = point.Channel3Voltage,
-            Channel4Voltage = point.Channel4Voltage,
-        });
-
-        return ScanController.BuildAuxiliaryPoints(basePoints, CurrentRenderParameter);
-    }
-
-    private void RebuildHeatmapData()
+    private void UpdateHeatmapCells(PointRowViewModel row)
     {
         if (_scanPlan is null || _heatmapData is null || _scanPlan.Step <= 0)
         {
             return;
         }
 
-        for (int row = 0; row < _heatmapData.GetLength(0); row++)
+        SetHeatmapCell(row.X, row.Y, row.Voltage);
+
+        ScanParameter parameter = CurrentRenderParameter;
+        if (string.Equals(parameter.Channel2Mode, ScanParameter.ChannelModeAuxScan, StringComparison.OrdinalIgnoreCase))
         {
-            for (int column = 0; column < _heatmapData.GetLength(1); column++)
-            {
-                _heatmapData[row, column] = double.NaN;
-            }
+            SetHeatmapCell(row.X + parameter.Channel2OffsetX, row.Y + parameter.Channel2OffsetY, row.Channel2Voltage);
         }
 
-        foreach (PointData point in GetRenderedPoints())
+        if (string.Equals(parameter.Channel3Mode, ScanParameter.ChannelModeAuxScan, StringComparison.OrdinalIgnoreCase))
         {
-            if (double.IsNaN(point.Voltage) || point.Voltage < 0)
-            {
-                continue;
-            }
+            SetHeatmapCell(row.X + parameter.Channel3OffsetX, row.Y + parameter.Channel3OffsetY, row.Channel3Voltage);
+        }
 
-            int column = (int)Math.Round((point.X - _scanPlan.MinX) / _scanPlan.Step);
-            int row = (int)Math.Round((point.Y - _scanPlan.MinY) / _scanPlan.Step);
+        if (string.Equals(parameter.Channel4Mode, ScanParameter.ChannelModeAuxScan, StringComparison.OrdinalIgnoreCase))
+        {
+            SetHeatmapCell(row.X + parameter.Channel4OffsetX, row.Y + parameter.Channel4OffsetY, row.Channel4Voltage);
+        }
+    }
 
-            if (row >= 0 && row < _heatmapData.GetLength(0) &&
-                column >= 0 && column < _heatmapData.GetLength(1))
-            {
-                _heatmapData[row, column] = point.Voltage;
-            }
+    private void SetHeatmapCell(double x, double y, double voltage)
+    {
+        if (_scanPlan is null || _heatmapData is null || _scanPlan.Step <= 0)
+        {
+            return;
+        }
+
+        int column = (int)Math.Round((x - _scanPlan.MinX) / _scanPlan.Step);
+        int row = (int)Math.Round((y - _scanPlan.MinY) / _scanPlan.Step);
+
+        if (row >= 0 && row < _heatmapData.GetLength(0) &&
+            column >= 0 && column < _heatmapData.GetLength(1))
+        {
+            _heatmapData[row, column] = voltage;
         }
     }
 
@@ -767,7 +780,7 @@ public partial class MainWindow : Window
         return double.IsNaN(value) || value < 0 ? 0 : value;
     }
 
-    private GeometryModel3D CreateMarkerCubeModel(double centerX, double centerZ, double height, double size, Color color)
+    private static void AddCubeToMesh(MeshGeometry3D mesh, double centerX, double centerZ, double height, double size)
     {
         double half = size / 2.0;
         double baseY = -1.1;
@@ -782,13 +795,15 @@ public partial class MainWindow : Window
         Point3D p111 = new(centerX + half, topY, centerZ + half);
         Point3D p011 = new(centerX - half, topY, centerZ + half);
 
-        MeshGeometry3D mesh = new();
         AddQuad(mesh, p001, p101, p111, p011);
         AddQuad(mesh, p000, p100, p101, p001);
         AddQuad(mesh, p100, p110, p111, p101);
         AddQuad(mesh, p110, p010, p011, p111);
         AddQuad(mesh, p010, p000, p001, p011);
+    }
 
+    private static GeometryModel3D CreateColoredModel(MeshGeometry3D mesh, Color color)
+    {
         SolidColorBrush diffuseBrush = new(color);
         SolidColorBrush specularBrush = new(Color.FromArgb(180, 255, 255, 255));
 
@@ -885,6 +900,13 @@ public partial class MainWindow : Window
 
         normal.Normalize();
         return normal;
+    }
+
+    private static Color QuantizeSurfaceColor(double ratio)
+    {
+        ratio = Math.Clamp(ratio, 0, 1);
+        int bucket = (int)Math.Round(ratio * (SurfaceColorBuckets - 1));
+        return InterpolateSurfaceColor(bucket / (double)(SurfaceColorBuckets - 1));
     }
 
     private static Color InterpolateSurfaceColor(double ratio)
@@ -1166,6 +1188,17 @@ private void LoadPresetList(string? selectPresetName = null)
     private void AppendLog(string message)
     {
         LogTextBox.AppendText(message + Environment.NewLine);
+
+        if (LogTextBox.LineCount > MaxLogLines)
+        {
+            int firstKeptLine = LogTextBox.LineCount - MaxLogLines;
+            int trimIndex = LogTextBox.GetCharacterIndexFromLineIndex(firstKeptLine);
+            if (trimIndex > 0)
+            {
+                LogTextBox.Text = LogTextBox.Text[trimIndex..];
+            }
+        }
+
         LogTextBox.ScrollToEnd();
     }
 

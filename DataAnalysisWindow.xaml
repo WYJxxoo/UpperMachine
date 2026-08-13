@@ -112,6 +112,11 @@
                                    Margin="0,0,0,14"
                                    Text="设置" />
 
+                        <TextBlock Foreground="{StaticResource MutedTextBrush}" Text="请求 URL" />
+                        <TextBox x:Name="UrlTextBox"
+                                 Margin="0,6,0,14"
+                                 Text="https://api.deepseek.com/responses" />
+
                         <TextBlock Foreground="{StaticResource MutedTextBrush}" Text="API Key" />
                         <PasswordBox x:Name="ApiKeyPasswordBox"
                                      Margin="0,6,0,14"
@@ -120,7 +125,7 @@
                         <TextBlock Foreground="{StaticResource MutedTextBrush}" Text="模型" />
                         <TextBox x:Name="ModelTextBox"
                                  Margin="0,6,0,14"
-                                 Text="gpt-5.5" />
+                                 Text="deepseek-v4-flash" />
 
                         <TextBlock Foreground="{StaticResource MutedTextBrush}" Text="补充要求" />
                         <TextBox x:Name="PromptTextBox"
@@ -135,7 +140,7 @@
                         <TextBlock Margin="0,6,0,14"
                                    Foreground="{StaticResource MutedTextBrush}"
                                    TextWrapping="Wrap"
-                                   Text="留空时将读取 OPENAI_API_KEY 环境变量。" />
+                                   Text="URL 可指向任意兼容 OpenAI 的接口（如 DeepSeek、通义、智谱、Ollama），支持 /responses 与 /chat/completions 两种格式，按地址自动识别。API Key 留空时将读取 OPENAI_API_KEY 环境变量。" />
 
                         <StackPanel Orientation="Horizontal">
                             <Button x:Name="AnalyzeButton"

@@ -53,6 +53,7 @@ public partial class DataAnalysisWindow : Window
                 return;
             }
 
+            string url = UrlTextBox.Text.Trim();
             string model = ModelTextBox.Text.Trim();
             string prompt = PromptTextBox.Text.Trim();
 
@@ -62,6 +63,7 @@ public partial class DataAnalysisWindow : Window
 
             string result = await _analysisService.AnalyzeAsync(
                 apiKey,
+                url,
                 model,
                 _points,
                 _scanPlan,

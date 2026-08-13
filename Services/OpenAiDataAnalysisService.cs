@@ -10,9 +10,13 @@ namespace UpperMachine.Services;
 
 public sealed class OpenAiDataAnalysisService
 {
-    private static readonly HttpClient HttpClient = new()
+    private static readonly HttpClient HttpClient = new(new SocketsHttpHandler
     {
-        Timeout = TimeSpan.FromSeconds(120),
+        AutomaticDecompression = System.Net.DecompressionMethods.All,
+        ConnectTimeout = TimeSpan.FromSeconds(30),
+    })
+    {
+        Timeout = TimeSpan.FromSeconds(300),
     };
 
     private static readonly JsonSerializerOptions JsonOptions = new()
@@ -21,7 +25,9 @@ public sealed class OpenAiDataAnalysisService
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
     };
 
-    private const string DefaultModel = "gpt-5.5";
+    private const string DefaultUrl = "https://api.deepseek.com/responses";
+    private const string DefaultModel = "deepseek-v4-flash";
+    private const string SystemInstruction = "你是经验丰富的数据分析助手。请基于扫描数据做中文分析，先结论后证据，不要编造未出现的数值。";
 
     public string BuildSummaryText(
         IReadOnlyList<PointData> points,
@@ -63,6 +69,7 @@ public sealed class OpenAiDataAnalysisService
 
     public async Task<string> AnalyzeAsync(
         string apiKey,
+        string url,
         string model,
         IReadOnlyList<PointData> points,
         ScanPlanInfo? plan,
@@ -71,20 +78,33 @@ public sealed class OpenAiDataAnalysisService
         CancellationToken cancellationToken = default)
     {
         string prompt = BuildPrompt(points, plan, parameter, userInstruction);
-        object payload = new
-        {
-            model = string.IsNullOrWhiteSpace(model) ? DefaultModel : model.Trim(),
-            instructions = "你是经验丰富的数据分析助手。请基于扫描数据做中文分析，先结论后证据，不要编造未出现的数值。",
-            input = prompt,
-        };
+        string resolvedModel = string.IsNullOrWhiteSpace(model) ? DefaultModel : model.Trim();
+        string endpoint = string.IsNullOrWhiteSpace(url) ? DefaultUrl : url.Trim();
 
-        using HttpRequestMessage request = new(HttpMethod.Post, "https://api.openai.com/v1/responses");
+        // 兼容两种接口：/responses 使用 input+instructions，其余按 chat/completions 使用 messages。
+        object payload = endpoint.Contains("/responses", StringComparison.OrdinalIgnoreCase)
+            ? new
+            {
+                model = resolvedModel,
+                instructions = SystemInstruction,
+                input = prompt,
+            }
+            : new
+            {
+                model = resolvedModel,
+                messages = new object[]
+                {
+                    new { role = "system", content = SystemInstruction },
+                    new { role = "user", content = prompt },
+                },
+            };
+        using HttpRequestMessage request = new(HttpMethod.Post, endpoint);
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         request.Content = new StringContent(JsonSerializer.Serialize(payload, JsonOptions), Encoding.UTF8, "application/json");
 
-        using HttpResponseMessage response = await HttpClient.SendAsync(request, cancellationToken);
-        string responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
+        using HttpResponseMessage response = await SendAsync(request, cancellationToken);
+        string responseBody = await ReadBodyAsync(response, cancellationToken);
 
         if (!response.IsSuccessStatusCode)
         {
@@ -356,6 +376,41 @@ public sealed class OpenAiDataAnalysisService
         }
 
         return false;
+    }
+
+    private static string GetInnermostMessage(Exception ex)
+    {
+        Exception current = ex;
+        while (current.InnerException is not null)
+        {
+            current = current.InnerException;
+        }
+
+        return current.Message;
+    }
+
+    private static async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await HttpClient.SendAsync(request, cancellationToken);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or System.IO.IOException or TaskCanceledException)
+        {
+            throw new InvalidOperationException($"网络请求失败：{GetInnermostMessage(ex)}", ex);
+        }
+    }
+
+    private static async Task<string> ReadBodyAsync(HttpResponseMessage response, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await response.Content.ReadAsStringAsync(cancellationToken);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or System.IO.IOException or TaskCanceledException)
+        {
+            throw new InvalidOperationException($"读取响应失败：{GetInnermostMessage(ex)}", ex);
+        }
     }
 
     private static string ExtractErrorMessage(string responseBody, HttpStatusCode statusCode)
