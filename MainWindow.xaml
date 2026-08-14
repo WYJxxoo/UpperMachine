@@ -387,17 +387,6 @@
                     </ListBoxItem>
                 </ListBox>
 
-                <Border Grid.Row="3"
-                        Padding="12"
-                        Background="#151F28"
-                        BorderBrush="#2B3D4C"
-                        BorderThickness="1"
-                        CornerRadius="8">
-                    <StackPanel>
-                        <TextBlock Foreground="{StaticResource MutedTextBrush}" Text="当前模式" />
-                        <TextBlock Margin="0,6,0,0" Text="设备与参数" />
-                    </StackPanel>
-                </Border>
             </Grid>
         </Border>
 
@@ -925,11 +914,48 @@
                             <Grid>
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
                                     <RowDefinition Height="*" />
                                 </Grid.RowDefinitions>
-                                <TextBlock Style="{StaticResource SectionTitleStyle}" Text="串口日志" />
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Style="{StaticResource SectionTitleStyle}" Text="串口日志" />
+                                    <Button Grid.Column="1"
+                                            Width="72"
+                                            Height="32"
+                                            Style="{StaticResource ActionButtonStyle}"
+                                            Click="ClearLogButton_Click"
+                                            Content="清空日志" />
+                                </Grid>
+                                <Grid Grid.Row="1" Margin="0,0,0,10">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <ComboBox x:Name="SendTargetComboBox"
+                                              Width="112"
+                                              Margin="0,0,10,0"
+                                              SelectedIndex="0">
+                                        <ComboBoxItem Content="控制串口" />
+                                        <ComboBoxItem Content="传感串口" />
+                                    </ComboBox>
+                                    <TextBox x:Name="LogCommandTextBox"
+                                             Grid.Column="1"
+                                             Margin="0,0,10,0"
+                                             Text="$J=G90 X0 Y0 F500" />
+                                    <Button Grid.Column="2"
+                                            Width="72"
+                                            Height="40"
+                                            Style="{StaticResource ActionButtonStyle}"
+                                            Click="SendLogCommandButton_Click"
+                                            Content="发送" />
+                                </Grid>
                                 <TextBox x:Name="LogTextBox"
-                                         Grid.Row="1"
+                                         Grid.Row="2"
                                          Margin="0"
                                          Padding="12"
                                          Background="#101720"

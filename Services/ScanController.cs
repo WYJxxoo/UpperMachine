@@ -138,9 +138,9 @@ public sealed class ScanController : IDisposable
 
     public int HoldIntervalMs { get; set; } = 100;
 
-    public string DropCommand { get; set; } = "$J=G91 Z10 F500";
+    public string DropCommand { get; set; } = "$J=G91 Z5 F1500";
 
-    public string RaiseCommand { get; set; } = "$J=G91 Z-10 F1500";
+    public string RaiseCommand { get; set; } = "$J=G91 Z-5 F1500";
 
     public string FilterAlgorithm { get; set; } = ScanParameter.AverageFilter;
 

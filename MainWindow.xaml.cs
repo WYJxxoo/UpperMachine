@@ -362,7 +362,7 @@ public partial class MainWindow : Window
         DataBaudComboBox.ItemsSource = new[] { "115200", "57600", "38400", "19200", "9600" };
         PresetComboBox.ItemsSource = _scanPresets;
         ControlBaudComboBox.SelectedIndex = 0;
-        DataBaudComboBox.SelectedIndex = 0;
+        DataBaudComboBox.SelectedItem = "9600";
         RefreshPortList();
         LoadPresetList();
         NavigationListBox.SelectedIndex = 0;
@@ -1547,6 +1547,41 @@ private void LoadPresetList(string? selectPresetName = null)
         {
             AppendLog($"手动命令发送失败: {ex.Message}");
         }
+    }
+
+    private void SendLogCommandButton_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            if (!EnsureConnected())
+            {
+                return;
+            }
+
+            string command = LogCommandTextBox.Text.Trim();
+            if (string.IsNullOrWhiteSpace(command))
+            {
+                return;
+            }
+
+            if (SendTargetComboBox.SelectedIndex == 1)
+            {
+                _scanController.SendDataCommand(command);
+            }
+            else
+            {
+                _scanController.SendControlCommand(command);
+            }
+        }
+        catch (Exception ex)
+        {
+            AppendLog($"串口发送失败: {ex.Message}");
+        }
+    }
+
+    private void ClearLogButton_Click(object sender, RoutedEventArgs e)
+    {
+        LogTextBox.Clear();
     }
 
     private void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
