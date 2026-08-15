@@ -109,8 +109,9 @@ public sealed class ScanController : IDisposable
 
     private const double VoltageUpperLimit = 10.0;
     private const double VoltageLowerLimit = 0.0;
-    private const int MultiMeasureTimes = 3;
+    private const int MultiMeasureTimes = 5;
     private const int ScanRetryTimes = 2;
+    private const int SingleMeasureTimeoutMs = 400;
 
     public ScanController()
     {
@@ -138,9 +139,9 @@ public sealed class ScanController : IDisposable
 
     public int HoldIntervalMs { get; set; } = 100;
 
-    public string DropCommand { get; set; } = "$J=G91 Z5 F1500";
+    public string DropCommand { get; set; } = "$J=G91 Z10 F1500";
 
-    public string RaiseCommand { get; set; } = "$J=G91 Z-5 F1500";
+    public string RaiseCommand { get; set; } = "$J=G91 Z-10 F1500";
 
     public string FilterAlgorithm { get; set; } = ScanParameter.AverageFilter;
 
@@ -439,8 +440,13 @@ public sealed class ScanController : IDisposable
 
     private void CreatePath(ScanParameter scanParameter)
     {
-        int xPoints = (int)(scanParameter.MaxLimitX / scanParameter.MinStep);
-        int yPoints = (int)(scanParameter.MaxLimitY / scanParameter.MinStep);
+        if (scanParameter.StepX <= 0 || scanParameter.StepY <= 0)
+        {
+            throw new InvalidOperationException("X/Y 步长必须大于 0。");
+        }
+
+        int xPoints = (int)(scanParameter.MaxLimitX / scanParameter.StepX);
+        int yPoints = (int)(scanParameter.MaxLimitY / scanParameter.StepY);
         long theoreticalTotal = ((long)xPoints + 1L) * ((long)yPoints + 1L);
 
         if (theoreticalTotal > int.MaxValue)
@@ -461,14 +467,14 @@ public sealed class ScanController : IDisposable
 
         for (int y = 0; y <= yPoints; y++)
         {
-            double currentY = minY + scanParameter.MinStep * y;
+            double currentY = minY + scanParameter.StepY * y;
             IEnumerable<int> xRange = y % 2 == 0
                 ? Enumerable.Range(0, xPoints + 1)
                 : Enumerable.Range(0, xPoints + 1).Reverse();
 
             foreach (int x in xRange)
             {
-                double currentX = minX + scanParameter.MinStep * x;
+                double currentX = minX + scanParameter.StepX * x;
                 bool shouldAdd = true;
 
                 if (isCircle)
@@ -517,7 +523,8 @@ public sealed class ScanController : IDisposable
                     TotalPoints = _dataArray.Length,
                     Columns = xPoints + 1,
                     Rows = yPoints + 1,
-                    Step = scanParameter.MinStep,
+                    StepX = scanParameter.StepX,
+                    StepY = scanParameter.StepY,
                     MinX = minX,
                     MinY = minY,
                     MaxX = scanParameter.MaxLimitX,
@@ -679,10 +686,10 @@ public sealed class ScanController : IDisposable
                     isDataValid = true;
 
                     PointData point = _dataArray[presentPosition];
-                    point.Channel1Voltage = AverageOrNaN(channel1Voltages);
-                    point.Channel2Voltage = AverageOrNaN(channel2Voltages);
-                    point.Channel3Voltage = AverageOrNaN(channel3Voltages);
-                    point.Channel4Voltage = AverageOrNaN(channel4Voltages);
+                    point.Channel1Voltage = FilterChannel(channel1Voltages);
+                    point.Channel2Voltage = FilterChannel(channel2Voltages);
+                    point.Channel3Voltage = FilterChannel(channel3Voltages);
+                    point.Channel4Voltage = FilterChannel(channel4Voltages);
                     point.Voltage = finalVoltage;
                     _dataArray[presentPosition] = point;
                 }
@@ -708,8 +715,53 @@ public sealed class ScanController : IDisposable
         _dataBuffer.ClearPendingLines();
         SendCode(dataPort, "AT+AIREAD", "Sensor");
 
-        string[] response = await WaitForLinesAsync(_dataBuffer, 180, ct);
-        return ParseMeasurement(response);
+        // 等四路数据全部到齐再返回，避免串口分包时只采到先到的通道。
+        List<string> lines = new();
+        int elapsed = 0;
+        while (elapsed < SingleMeasureTimeoutMs)
+        {
+            lines.AddRange(_dataBuffer.DrainAvailableLines());
+            if (ContainsAllChannels(lines))
+            {
+                break;
+            }
+
+            await Task.Delay(10, ct);
+            elapsed += 10;
+        }
+
+        return ParseMeasurement(lines);
+    }
+
+    private static bool ContainsAllChannels(IReadOnlyList<string> lines)
+    {
+        bool has1 = false;
+        bool has2 = false;
+        bool has3 = false;
+        bool has4 = false;
+
+        foreach (string line in lines)
+        {
+            string trimmed = line.Trim();
+            if (trimmed.StartsWith("ch1:", StringComparison.OrdinalIgnoreCase))
+            {
+                has1 = true;
+            }
+            else if (trimmed.StartsWith("ch2:", StringComparison.OrdinalIgnoreCase))
+            {
+                has2 = true;
+            }
+            else if (trimmed.StartsWith("ch3:", StringComparison.OrdinalIgnoreCase))
+            {
+                has3 = true;
+            }
+            else if (trimmed.StartsWith("ch4:", StringComparison.OrdinalIgnoreCase))
+            {
+                has4 = true;
+            }
+        }
+
+        return has1 && has2 && has3 && has4;
     }
 
     private double ApplyFilter(IReadOnlyList<double> voltages)
@@ -817,9 +869,9 @@ public sealed class ScanController : IDisposable
         return !double.IsNaN(voltage) && voltage >= VoltageLowerLimit && voltage <= VoltageUpperLimit;
     }
 
-    private static double AverageOrNaN(IReadOnlyList<double> voltages)
+    private double FilterChannel(IReadOnlyList<double> voltages)
     {
-        return voltages.Count > 0 ? voltages.Average() : double.NaN;
+        return voltages.Count > 0 ? ApplyFilter(voltages) : double.NaN;
     }
 
     private async Task ExecuteAsync(
@@ -847,7 +899,7 @@ public sealed class ScanController : IDisposable
                 case WorkState.Wait:
                     int delayTime = _scanSettings.NextPosition % Math.Max(1, _scanSettings.Columns) == 1
                         ? (int)(scanParameter.MaxLimitX / scanParameter.Speed * 1000) + 200
-                        : (int)(scanParameter.MinStep / scanParameter.Speed * 1000);
+                        : (int)(scanParameter.StepX / scanParameter.Speed * 1000);
 
                     await Task.Delay(Math.Max(delayTime, 60), ct);
 

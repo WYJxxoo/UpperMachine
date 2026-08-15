@@ -18,7 +18,9 @@ public sealed class ScanParameter
 
     public double MaxLimitY { get; set; }
 
-    public int MinStep { get; set; }
+    public int StepX { get; set; }
+
+    public int StepY { get; set; }
 
     public double Speed { get; set; }
 

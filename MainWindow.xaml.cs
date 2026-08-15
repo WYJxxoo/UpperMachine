@@ -93,7 +93,8 @@ public partial class MainWindow : Window
         SetCardTitle(MaxXTextBox, "扫描参数设置");
         SetLabelFor(MaxXTextBox, "X 范围 (mm)");
         SetLabelFor(MaxYTextBox, "Y 范围 (mm)");
-        SetLabelFor(StepTextBox, "步长 (mm)");
+        SetLabelFor(StepXTextBox, "X 步长 (mm)");
+        SetLabelFor(StepYTextBox, "Y 步长 (mm)");
         SetLabelFor(SpeedTextBox, "速度 (mm/min)");
         SetLabelFor(ShapeComboBox, "扫描形状");
         SetLabelFor(RadiusTextBox, "半径 (mm)");
@@ -602,18 +603,18 @@ public partial class MainWindow : Window
                 var heatmap = HeatmapPlot.Plot.Add.Heatmap(_heatmapData);
                 heatmap.CellAlignment = ScottPlot.Alignment.LowerLeft;
                 heatmap.Rectangle = new ScottPlot.CoordinateRect(
-                    _scanPlan.MinX - _scanPlan.Step / 2.0,
-                    _scanPlan.MinX + _scanPlan.MaxX + _scanPlan.Step / 2.0,
-                    _scanPlan.MinY - _scanPlan.Step / 2.0,
-                    _scanPlan.MinY + _scanPlan.MaxY + _scanPlan.Step / 2.0);
+                    _scanPlan.MinX - _scanPlan.StepX / 2.0,
+                    _scanPlan.MinX + _scanPlan.MaxX + _scanPlan.StepX / 2.0,
+                    _scanPlan.MinY - _scanPlan.StepY / 2.0,
+                    _scanPlan.MinY + _scanPlan.MaxY + _scanPlan.StepY / 2.0);
                 heatmap.Colormap = new ScottPlot.Colormaps.Turbo();
             }
 
             HeatmapPlot.Plot.Axes.SetLimits(
-                _scanPlan.MinX - _scanPlan.Step / 2.0,
-                _scanPlan.MinX + _scanPlan.MaxX + _scanPlan.Step / 2.0,
-                _scanPlan.MinY - _scanPlan.Step / 2.0,
-                _scanPlan.MinY + _scanPlan.MaxY + _scanPlan.Step / 2.0);
+                _scanPlan.MinX - _scanPlan.StepX / 2.0,
+                _scanPlan.MinX + _scanPlan.MaxX + _scanPlan.StepX / 2.0,
+                _scanPlan.MinY - _scanPlan.StepY / 2.0,
+                _scanPlan.MinY + _scanPlan.MaxY + _scanPlan.StepY / 2.0);
             HeatmapPlot.Plot.Axes.SquareUnits();
         }
 
@@ -644,7 +645,7 @@ public partial class MainWindow : Window
 
         ResetSurface();
 
-        double markerSize = Math.Max(_scanPlan.Step * 0.28, 0.8);
+        double markerSize = Math.Max(Math.Min(_scanPlan.StepX, _scanPlan.StepY) * 0.28, 0.8);
         Dictionary<Color, MeshGeometry3D> buckets = new();
         ScanParameter parameter = CurrentRenderParameter;
 
@@ -728,7 +729,7 @@ public partial class MainWindow : Window
 
     private void UpdateHeatmapCells(PointRowViewModel row)
     {
-        if (_scanPlan is null || _heatmapData is null || _scanPlan.Step <= 0)
+        if (_scanPlan is null || _heatmapData is null || _scanPlan.StepX <= 0 || _scanPlan.StepY <= 0)
         {
             return;
         }
@@ -754,13 +755,13 @@ public partial class MainWindow : Window
 
     private void SetHeatmapCell(double x, double y, double voltage)
     {
-        if (_scanPlan is null || _heatmapData is null || _scanPlan.Step <= 0)
+        if (_scanPlan is null || _heatmapData is null || _scanPlan.StepX <= 0 || _scanPlan.StepY <= 0)
         {
             return;
         }
 
-        int column = (int)Math.Round((x - _scanPlan.MinX) / _scanPlan.Step);
-        int row = (int)Math.Round((y - _scanPlan.MinY) / _scanPlan.Step);
+        int column = (int)Math.Round((x - _scanPlan.MinX) / _scanPlan.StepX);
+        int row = (int)Math.Round((y - _scanPlan.MinY) / _scanPlan.StepY);
 
         if (row >= 0 && row < _heatmapData.GetLength(0) &&
             column >= 0 && column < _heatmapData.GetLength(1))
@@ -995,7 +996,8 @@ public partial class MainWindow : Window
         {
             MaxLimitX = ParseDouble(MaxXTextBox.Text, "X range"),
             MaxLimitY = ParseDouble(MaxYTextBox.Text, "Y range"),
-            MinStep = ParseInt(StepTextBox.Text, "Step"),
+            StepX = ParseInt(StepXTextBox.Text, "X step"),
+            StepY = ParseInt(StepYTextBox.Text, "Y step"),
             Speed = ParseDouble(SpeedTextBox.Text, "Speed"),
             Shape = shape,
             Radius = ParseDouble(RadiusTextBox.Text, "Radius"),
@@ -1016,7 +1018,8 @@ public partial class MainWindow : Window
     {
         MaxXTextBox.Text = parameter.MaxLimitX.ToString(CultureInfo.InvariantCulture);
         MaxYTextBox.Text = parameter.MaxLimitY.ToString(CultureInfo.InvariantCulture);
-        StepTextBox.Text = parameter.MinStep.ToString(CultureInfo.InvariantCulture);
+        StepXTextBox.Text = parameter.StepX.ToString(CultureInfo.InvariantCulture);
+        StepYTextBox.Text = parameter.StepY.ToString(CultureInfo.InvariantCulture);
         SpeedTextBox.Text = parameter.Speed.ToString(CultureInfo.InvariantCulture);
         RadiusTextBox.Text = parameter.Radius.ToString(CultureInfo.InvariantCulture);
         string filterAlgorithm = string.IsNullOrWhiteSpace(parameter.FilterAlgorithm)
@@ -1062,7 +1065,8 @@ public partial class MainWindow : Window
         {
             MaxLimitX = parameter.MaxLimitX,
             MaxLimitY = parameter.MaxLimitY,
-            MinStep = parameter.MinStep,
+            StepX = parameter.StepX,
+            StepY = parameter.StepY,
             Speed = parameter.Speed,
             Shape = parameter.Shape,
             Radius = parameter.Radius,

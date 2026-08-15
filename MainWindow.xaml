@@ -538,12 +538,17 @@
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="*" />
                                                 <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="*" />
                                             </Grid.ColumnDefinitions>
                                             <StackPanel Grid.Column="0" Margin="0,0,10,0">
-                                                <Label Content="扫描步长" />
-                                                <TextBox x:Name="StepTextBox" Text="5" />
+                                                <Label Content="X 步长 (mm)" />
+                                                <TextBox x:Name="StepXTextBox" Text="5" />
                                             </StackPanel>
-                                            <StackPanel Grid.Column="1">
+                                            <StackPanel Grid.Column="1" Margin="0,0,10,0">
+                                                <Label Content="Y 步长 (mm)" />
+                                                <TextBox x:Name="StepYTextBox" Text="5" />
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="2">
                                                 <Label Content="扫描速度" />
                                                 <TextBox x:Name="SpeedTextBox" Text="500" />
                                             </StackPanel>

@@ -44,7 +44,7 @@ public sealed class OpenAiDataAnalysisService
         if (plan is not null)
         {
             sb.AppendLine($"网格: {plan.Rows} x {plan.Columns}");
-            sb.AppendLine($"步长: {plan.Step}");
+            sb.AppendLine($"步长: X {plan.StepX}, Y {plan.StepY}");
             sb.AppendLine($"范围: X 0..{plan.MaxX.ToString("F2", CultureInfo.InvariantCulture)}, Y 0..{plan.MaxY.ToString("F2", CultureInfo.InvariantCulture)}");
         }
 

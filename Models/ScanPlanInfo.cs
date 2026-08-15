@@ -8,7 +8,9 @@ public sealed class ScanPlanInfo
 
     public required int Rows { get; init; }
 
-    public required int Step { get; init; }
+    public required int StepX { get; init; }
+
+    public required int StepY { get; init; }
 
     public required double MinX { get; init; }
 
