@@ -12,6 +12,7 @@
         WindowStartupLocation="CenterOwner"
         Background="#0B1117"
         FontFamily="Microsoft YaHei UI">
+    <Canvas x:Name="canvasRoot" Background="White">
     <Window.Resources>
         <SolidColorBrush x:Key="PanelBrush" Color="#18212B" />
         <SolidColorBrush x:Key="PanelSoftBrush" Color="#202E3B" />
@@ -226,4 +227,5 @@
             </Border>
         </Grid>
     </Grid>
+</Canvas>
 </Window>

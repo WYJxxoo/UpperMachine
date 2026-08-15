@@ -14,989 +14,1291 @@
         MinHeight="720"
         WindowStartupLocation="CenterScreen"
         Background="#0B1117">
-    <Window.Resources>
-        <LinearGradientBrush x:Key="WindowBackgroundBrush" StartPoint="0,0" EndPoint="1,1">
-            <GradientStop Color="#0B1117" Offset="0" />
-            <GradientStop Color="#121820" Offset="0.55" />
-            <GradientStop Color="#181F27" Offset="1" />
-        </LinearGradientBrush>
+        <Window.Resources>
+                <SolidColorBrush x:Key="WindowBackgroundBrush"
+                                Color="#0D1216"/>
 
-        <SolidColorBrush x:Key="SidebarBrush" Color="#10171F" />
-        <SolidColorBrush x:Key="PanelBrush" Color="#18212B" />
-        <SolidColorBrush x:Key="PanelAltBrush" Color="#1D2834" />
-        <SolidColorBrush x:Key="PanelSoftBrush" Color="#202E3B" />
-        <SolidColorBrush x:Key="BorderBrushStrong" Color="#2E4253" />
-        <SolidColorBrush x:Key="TextBrush" Color="#EAF1F7" />
-        <SolidColorBrush x:Key="MutedTextBrush" Color="#C2D0DC" />
-        <SolidColorBrush x:Key="AccentBrush" Color="#58C7A3" />
-        <SolidColorBrush x:Key="AccentSoftBrush" Color="#223A35" />
-        <SolidColorBrush x:Key="HighlightBrush" Color="#F0BA67" />
-        <SolidColorBrush x:Key="DangerBrush" Color="#D96B76" />
-        <SolidColorBrush x:Key="InputBrush" Color="#111922" />
-        <SolidColorBrush x:Key="InputBorderBrush" Color="#314353" />
+                <SolidColorBrush x:Key="SidebarBrush"
+                                Color="#12191E"/>
+                <SolidColorBrush x:Key="PanelBrush"
+                                Color="#182126"/>
+                <SolidColorBrush x:Key="PanelAltBrush"
+                                Color="#1E2A30"/>
+                <SolidColorBrush x:Key="PanelSoftBrush"
+                                Color="#26343A"/>
+                <SolidColorBrush x:Key="BorderBrushStrong"
+                                Color="#34464D"/>
+                <SolidColorBrush x:Key="TextBrush"
+                                Color="#EAF1F7"/>
+                <SolidColorBrush x:Key="MutedTextBrush"
+                                Color="#C2D0DC"/>
+                <SolidColorBrush x:Key="AccentBrush"
+                                Color="#58C7A3"/>
+                <SolidColorBrush x:Key="AccentSoftBrush"
+                                Color="#223A35"/>
+                <SolidColorBrush x:Key="HighlightBrush"
+                                Color="#F0BA67"/>
+                <SolidColorBrush x:Key="DangerBrush"
+                                Color="#D96B76"/>
+                <SolidColorBrush x:Key="InputBrush"
+                                Color="#10171B"/>
+                <SolidColorBrush x:Key="InputBorderBrush"
+                                Color="#3A5058"/>
 
-        <Style TargetType="TextBlock">
-            <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
-            <Setter Property="FontFamily" Value="Microsoft YaHei UI" />
-        </Style>
+                <Style TargetType="TextBlock">
+                        <Setter Property="Foreground"
+                                        Value="{StaticResource TextBrush}"/>
+                        <Setter Property="FontFamily"
+                                        Value="Microsoft YaHei UI"/>
+                </Style>
 
-        <Style TargetType="Label">
-            <Setter Property="Foreground" Value="{StaticResource MutedTextBrush}" />
-            <Setter Property="FontFamily" Value="Microsoft YaHei UI" />
-            <Setter Property="Margin" Value="0,0,0,4" />
-        </Style>
+                <Style TargetType="Label">
+                        <Setter Property="Foreground"
+                                        Value="{StaticResource MutedTextBrush}"/>
+                        <Setter Property="FontFamily"
+                                        Value="Microsoft YaHei UI"/>
+                        <Setter Property="Margin"
+                                        Value="0,0,0,4"/>
+                </Style>
 
-        <Style TargetType="TextBox">
-            <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
-            <Setter Property="Background" Value="{StaticResource InputBrush}" />
-            <Setter Property="BorderBrush" Value="{StaticResource InputBorderBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="Padding" Value="10,7" />
-            <Setter Property="FontSize" Value="13" />
-            <Setter Property="Margin" Value="0,0,0,12" />
-        </Style>
-
-        <Style TargetType="ComboBox">
-            <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
-            <Setter Property="Background" Value="{StaticResource InputBrush}" />
-            <Setter Property="BorderBrush" Value="{StaticResource InputBorderBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="Padding" Value="8,4" />
-            <Setter Property="FontSize" Value="13" />
-            <Setter Property="Margin" Value="0,0,0,12" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="ComboBox">
-                        <Grid>
-                            <ToggleButton x:Name="DropDownToggle"
-                                          Focusable="False"
-                                          ClickMode="Press"
-                                          IsChecked="{Binding IsDropDownOpen, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"
-                                          Background="{TemplateBinding Background}"
-                                          BorderBrush="{TemplateBinding BorderBrush}"
-                                          BorderThickness="{TemplateBinding BorderThickness}">
-                                <ToggleButton.Template>
-                                    <ControlTemplate TargetType="ToggleButton">
-                                        <Border x:Name="RootBorder"
-                                                Background="{TemplateBinding Background}"
-                                                BorderBrush="{TemplateBinding BorderBrush}"
-                                                BorderThickness="{TemplateBinding BorderThickness}"
-                                                CornerRadius="6">
-                                            <Grid>
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="*" />
-                                                    <ColumnDefinition Width="34" />
-                                                </Grid.ColumnDefinitions>
-
-                                                <ContentPresenter Margin="12,0,8,0"
-                                                                  VerticalAlignment="Center"
-                                                                  HorizontalAlignment="Left"
-                                                                  Content="{Binding SelectionBoxItem, RelativeSource={RelativeSource AncestorType=ComboBox}}"
-                                                                  ContentTemplate="{Binding SelectionBoxItemTemplate, RelativeSource={RelativeSource AncestorType=ComboBox}}"
-                                                                  ContentStringFormat="{Binding SelectionBoxItemStringFormat, RelativeSource={RelativeSource AncestorType=ComboBox}}"
-                                                                  RecognizesAccessKey="True"
-                                                                  TextElement.Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ComboBox}}" />
-
-                                                <Border Grid.Column="1"
-                                                        Background="#1A2530"
+                <Style TargetType="TextBox">
+                        <Setter Property="Foreground"
+                                        Value="{StaticResource TextBrush}"/>
+                        <Setter Property="Background"
+                                        Value="{StaticResource InputBrush}"/>
+                        <Setter Property="BorderBrush"
+                                        Value="{StaticResource InputBorderBrush}"/>
+                        <Setter Property="BorderThickness"
+                                        Value="1"/>
+                        <Setter Property="Padding"
+                                        Value="12,8"/>
+                        <Setter Property="MinHeight"
+                                        Value="38"/>
+                        <Setter Property="FontSize"
+                                        Value="13"/>
+                        <Setter Property="Margin"
+                                        Value="0,0,0,12"/>
+                        <Setter Property="Template">
+                                <Setter.Value>
+                                        <ControlTemplate TargetType="TextBox">
+                                                <Border x:Name="InputBorder"
+                                                        Background="{TemplateBinding Background}"
                                                         BorderBrush="{TemplateBinding BorderBrush}"
-                                                        BorderThickness="1,0,0,0">
-                                                    <Path Width="10"
-                                                          Height="6"
-                                                          HorizontalAlignment="Center"
-                                                          VerticalAlignment="Center"
-                                                          Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ComboBox}}"
-                                                          Data="M 0 0 L 10 0 L 5 6 Z" />
+                                                        BorderThickness="{TemplateBinding BorderThickness}"
+                                                        CornerRadius="6">
+                                                        <ScrollViewer x:Name="PART_ContentHost"
+                                                                      Margin="{TemplateBinding Padding}"/>
                                                 </Border>
-                                            </Grid>
-                                        </Border>
-                                        <ControlTemplate.Triggers>
-                                            <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter TargetName="RootBorder" Property="BorderBrush" Value="#5E7B95" />
-                                            </Trigger>
-                                            <Trigger Property="IsChecked" Value="True">
-                                                <Setter TargetName="RootBorder" Property="BorderBrush" Value="{StaticResource AccentBrush}" />
-                                            </Trigger>
-                                            <Trigger Property="IsEnabled" Value="False">
-                                                <Setter Property="Opacity" Value="0.6" />
-                                            </Trigger>
-                                        </ControlTemplate.Triggers>
-                                    </ControlTemplate>
-                                </ToggleButton.Template>
-                            </ToggleButton>
+                                                <ControlTemplate.Triggers>
+                                                        <Trigger Property="IsKeyboardFocusWithin"
+                                                                        Value="True">
+                                                                <Setter TargetName="InputBorder"
+                                                                                Property="BorderBrush"
+                                                                                Value="{StaticResource AccentBrush}"/>
+                                                        </Trigger>
+                                                        <Trigger Property="IsEnabled"
+                                                                        Value="False">
+                                                                <Setter TargetName="InputBorder"
+                                                                                Property="Opacity"
+                                                                                Value="0.5"/>
+                                                        </Trigger>
+                                                </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                </Setter.Value>
+                        </Setter>
+                </Style>
 
-                            <Popup x:Name="PART_Popup"
-                                   AllowsTransparency="True"
-                                   Focusable="False"
-                                   IsOpen="{TemplateBinding IsDropDownOpen}"
-                                   Placement="Bottom"
-                                   PopupAnimation="Slide">
-                                <Border Margin="0,4,0,0"
-                                        MinWidth="{TemplateBinding ActualWidth}"
-                                        Background="#16212B"
-                                        BorderBrush="#466178"
-                                        BorderThickness="1"
-                                        CornerRadius="6">
-                                    <ScrollViewer CanContentScroll="True"
-                                                  MaxHeight="280">
-                                        <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Contained" />
-                                    </ScrollViewer>
-                                </Border>
-                            </Popup>
-                        </Grid>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsEnabled" Value="False">
-                                <Setter Property="Opacity" Value="0.6" />
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
+                <Style TargetType="ComboBox">
+                        <Setter Property="Foreground"
+                                        Value="{StaticResource TextBrush}"/>
+                        <Setter Property="Background"
+                                        Value="{StaticResource InputBrush}"/>
+                        <Setter Property="BorderBrush"
+                                        Value="{StaticResource InputBorderBrush}"/>
+                        <Setter Property="BorderThickness"
+                                        Value="1"/>
+                        <Setter Property="Padding"
+                                        Value="10,0"/>
+                        <Setter Property="Height"
+                                        Value="38"/>
+                        <Setter Property="FontSize"
+                                        Value="13"/>
+                        <Setter Property="Margin"
+                                        Value="0,0,0,12"/>
+                        <Setter Property="Template">
+                                <Setter.Value>
+                                        <ControlTemplate TargetType="ComboBox">
+                                                <Grid>
+                                                        <ToggleButton x:Name="DropDownToggle"
+                                                                      Focusable="False"
+                                                                      ClickMode="Press"
+                                                                      IsChecked="{Binding IsDropDownOpen, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"
+                                                                      Background="{TemplateBinding Background}"
+                                                                      BorderBrush="{TemplateBinding BorderBrush}"
+                                                                      BorderThickness="{TemplateBinding BorderThickness}">
+                                                                <ToggleButton.Template>
+                                                                        <ControlTemplate TargetType="ToggleButton">
+                                                                                <Border x:Name="RootBorder"
+                                                                                        Background="{TemplateBinding Background}"
+                                                                                        BorderBrush="{TemplateBinding BorderBrush}"
+                                                                                        BorderThickness="{TemplateBinding BorderThickness}"
+                                                                                        CornerRadius="6">
+                                                                                        <Grid>
+                                                                                                <Grid.ColumnDefinitions>
+                                                                                                        <ColumnDefinition Width="*"/>
+                                                                                                        <ColumnDefinition Width="34"/>
+                                                                                                </Grid.ColumnDefinitions>
 
-        <Style TargetType="ComboBoxItem">
-            <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
-            <Setter Property="Background" Value="#16212B" />
-            <Setter Property="Padding" Value="12,8" />
-            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="ComboBoxItem">
-                        <Border x:Name="ItemBorder"
-                                Background="{TemplateBinding Background}">
-                            <ContentPresenter VerticalAlignment="Center" />
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsHighlighted" Value="True">
-                                <Setter TargetName="ItemBorder" Property="Background" Value="#234055" />
-                            </Trigger>
-                            <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="ItemBorder" Property="Background" Value="#2D526E" />
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
+                                                                                                <ContentPresenter Margin="12,0,8,0"
+                                                                                                                  VerticalAlignment="Center"
+                                                                                                                  HorizontalAlignment="Left"
+                                                                                                                  Content="{Binding SelectionBoxItem, RelativeSource={RelativeSource AncestorType=ComboBox}}"
+                                                                                                                  ContentTemplate="{Binding SelectionBoxItemTemplate, RelativeSource={RelativeSource AncestorType=ComboBox}}"
+                                                                                                                  ContentStringFormat="{Binding SelectionBoxItemStringFormat, RelativeSource={RelativeSource AncestorType=ComboBox}}"
+                                                                                                                  RecognizesAccessKey="True"
+                                                                                                                  TextElement.Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ComboBox}}"/>
 
-        <Style TargetType="Slider">
-            <Setter Property="Margin" Value="8,0,0,0" />
-        </Style>
+                                                                                                <Border Grid.Column="1"
+                                                                                                        Background="#1A2530"
+                                                                                                        BorderBrush="{TemplateBinding BorderBrush}"
+                                                                                                        BorderThickness="1,0,0,0">
+                                                                                                        <Path Width="10"
+                                                                                                              Height="6"
+                                                                                                              HorizontalAlignment="Center"
+                                                                                                              VerticalAlignment="Center"
+                                                                                                              Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ComboBox}}"
+                                                                                                              Data="M 0 0 L 10 0 L 5 6 Z"/>
+                                                                                                </Border>
+                                                                                        </Grid>
+                                                                                </Border>
+                                                                                <ControlTemplate.Triggers>
+                                                                                        <Trigger Property="IsMouseOver"
+                                                                                                        Value="True">
+                                                                                                <Setter TargetName="RootBorder"
+                                                                                                                Property="BorderBrush"
+                                                                                                                Value="#5E7B95"/>
+                                                                                        </Trigger>
+                                                                                        <Trigger Property="IsChecked"
+                                                                                                        Value="True">
+                                                                                                <Setter TargetName="RootBorder"
+                                                                                                                Property="BorderBrush"
+                                                                                                                Value="{StaticResource AccentBrush}"/>
+                                                                                        </Trigger>
+                                                                                        <Trigger Property="IsEnabled"
+                                                                                                        Value="False">
+                                                                                                <Setter Property="Opacity"
+                                                                                                                Value="0.6"/>
+                                                                                        </Trigger>
+                                                                                </ControlTemplate.Triggers>
+                                                                        </ControlTemplate>
+                                                                </ToggleButton.Template>
+                                                        </ToggleButton>
 
-        <Style x:Key="CardBorderStyle" TargetType="Border">
-            <Setter Property="Background" Value="{StaticResource PanelBrush}" />
-            <Setter Property="BorderBrush" Value="{StaticResource BorderBrushStrong}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="8" />
-            <Setter Property="Padding" Value="18" />
-        </Style>
+                                                        <Popup x:Name="PART_Popup"
+                                                               AllowsTransparency="True"
+                                                               Focusable="False"
+                                                               IsOpen="{TemplateBinding IsDropDownOpen}"
+                                                               Placement="Bottom"
+                                                               PopupAnimation="Slide">
+                                                                <Border Margin="0,4,0,0"
+                                                                        MinWidth="{TemplateBinding ActualWidth}"
+                                                                        Background="#16212B"
+                                                                        BorderBrush="#466178"
+                                                                        BorderThickness="1"
+                                                                        CornerRadius="6">
+                                                                        <ScrollViewer CanContentScroll="True"
+                                                                                      MaxHeight="280">
+                                                                                <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Contained"/>
+                                                                        </ScrollViewer>
+                                                                </Border>
+                                                        </Popup>
+                                                </Grid>
+                                                <ControlTemplate.Triggers>
+                                                        <Trigger Property="IsEnabled"
+                                                                        Value="False">
+                                                                <Setter Property="Opacity"
+                                                                                Value="0.6"/>
+                                                        </Trigger>
+                                                </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                </Setter.Value>
+                        </Setter>
+                </Style>
 
-        <Style x:Key="SectionTitleStyle" TargetType="TextBlock">
-            <Setter Property="FontFamily" Value="Bahnschrift SemiBold" />
-            <Setter Property="FontSize" Value="18" />
-            <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
-            <Setter Property="Margin" Value="0,0,0,14" />
-        </Style>
+                <Style TargetType="ComboBoxItem">
+                        <Setter Property="Foreground"
+                                        Value="{StaticResource TextBrush}"/>
+                        <Setter Property="Background"
+                                        Value="#16212B"/>
+                        <Setter Property="Padding"
+                                        Value="12,8"/>
+                        <Setter Property="HorizontalContentAlignment"
+                                        Value="Stretch"/>
+                        <Setter Property="Template">
+                                <Setter.Value>
+                                        <ControlTemplate TargetType="ComboBoxItem">
+                                                <Border x:Name="ItemBorder"
+                                                        Background="{TemplateBinding Background}">
+                                                        <ContentPresenter VerticalAlignment="Center"/>
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                        <Trigger Property="IsHighlighted"
+                                                                        Value="True">
+                                                                <Setter TargetName="ItemBorder"
+                                                                                Property="Background"
+                                                                                Value="#234055"/>
+                                                        </Trigger>
+                                                        <Trigger Property="IsSelected"
+                                                                        Value="True">
+                                                                <Setter TargetName="ItemBorder"
+                                                                                Property="Background"
+                                                                                Value="#2D526E"/>
+                                                        </Trigger>
+                                                </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                </Setter.Value>
+                        </Setter>
+                </Style>
 
-        <Style x:Key="ActionButtonStyle" TargetType="Button">
-            <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
-            <Setter Property="Background" Value="{StaticResource PanelSoftBrush}" />
-            <Setter Property="BorderBrush" Value="{StaticResource BorderBrushStrong}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="Padding" Value="14,9" />
-            <Setter Property="Margin" Value="0,0,10,10" />
-            <Setter Property="FontFamily" Value="Bahnschrift SemiBold" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="8">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
-                        </Border>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-            <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#263647" />
-                </Trigger>
-                <Trigger Property="IsPressed" Value="True">
-                    <Setter Property="Background" Value="#151F2A" />
-                </Trigger>
-            </Style.Triggers>
-        </Style>
+                <Style TargetType="Slider">
+                        <Setter Property="Margin"
+                                        Value="8,0,0,0"/>
+                </Style>
 
-        <Style x:Key="AccentButtonStyle" TargetType="Button" BasedOn="{StaticResource ActionButtonStyle}">
-            <Setter Property="Background" Value="{StaticResource AccentBrush}" />
-            <Setter Property="Foreground" Value="#0A1414" />
-            <Setter Property="BorderBrush" Value="#7DE4C2" />
-            <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#72D8B6" />
-                </Trigger>
-                <Trigger Property="IsPressed" Value="True">
-                    <Setter Property="Background" Value="#43AF8B" />
-                </Trigger>
-            </Style.Triggers>
-        </Style>
+                <Style x:Key="CardBorderStyle"
+                                TargetType="Border">
+                        <Setter Property="Background"
+                                        Value="{StaticResource PanelBrush}"/>
+                        <Setter Property="BorderBrush"
+                                        Value="{StaticResource BorderBrushStrong}"/>
+                        <Setter Property="BorderThickness"
+                                        Value="1"/>
+                        <Setter Property="CornerRadius"
+                                        Value="6"/>
+                        <Setter Property="Padding"
+                                        Value="20"/>
+                </Style>
 
-        <Style x:Key="DangerButtonStyle" TargetType="Button" BasedOn="{StaticResource ActionButtonStyle}">
-            <Setter Property="Background" Value="#41232A" />
-            <Setter Property="BorderBrush" Value="#78434B" />
-            <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#5A2F38" />
-                </Trigger>
-            </Style.Triggers>
-        </Style>
+                <Style x:Key="SectionTitleStyle"
+                                TargetType="TextBlock">
+                        <Setter Property="FontFamily"
+                                        Value="Bahnschrift SemiBold"/>
+                        <Setter Property="FontSize"
+                                        Value="17"/>
+                        <Setter Property="Foreground"
+                                        Value="{StaticResource TextBrush}"/>
+                        <Setter Property="Margin"
+                                        Value="0,0,0,14"/>
+                </Style>
 
-        <Style x:Key="NavigationListStyle" TargetType="ListBox">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-        </Style>
+                <Style x:Key="ActionButtonStyle"
+                                TargetType="Button">
+                        <Setter Property="Foreground"
+                                        Value="{StaticResource TextBrush}"/>
+                        <Setter Property="Background"
+                                        Value="{StaticResource PanelSoftBrush}"/>
+                        <Setter Property="BorderBrush"
+                                        Value="{StaticResource BorderBrushStrong}"/>
+                        <Setter Property="BorderThickness"
+                                        Value="1"/>
+                        <Setter Property="Padding"
+                                        Value="16,0"/>
+                        <Setter Property="Height"
+                                        Value="38"/>
+                        <Setter Property="Margin"
+                                        Value="0,0,10,10"/>
+                        <Setter Property="FontFamily"
+                                        Value="Bahnschrift SemiBold"/>
+                        <Setter Property="Cursor"
+                                        Value="Hand"/>
+                        <Setter Property="Template">
+                                <Setter.Value>
+                                        <ControlTemplate TargetType="Button">
+                                                <Border Background="{TemplateBinding Background}"
+                                                        BorderBrush="{TemplateBinding BorderBrush}"
+                                                        BorderThickness="{TemplateBinding BorderThickness}"
+                                                        CornerRadius="6">
+                                                        <ContentPresenter HorizontalAlignment="Center"
+                                                                        VerticalAlignment="Center"/>
+                                                </Border>
+                                        </ControlTemplate>
+                                </Setter.Value>
+                        </Setter>
+                        <Style.Triggers>
+                                <Trigger Property="IsMouseOver"
+                                                Value="True">
+                                        <Setter Property="Background"
+                                                        Value="#263647"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed"
+                                                Value="True">
+                                        <Setter Property="Background"
+                                                        Value="#151F2A"/>
+                                </Trigger>
+                        </Style.Triggers>
+                </Style>
 
-        <Style x:Key="NavigationItemStyle" TargetType="ListBoxItem">
-            <Setter Property="Margin" Value="0,0,0,10" />
-            <Setter Property="Padding" Value="0" />
-            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="ListBoxItem">
-                        <Border x:Name="Root"
-                                Padding="14"
-                                CornerRadius="8"
-                                Background="#131B24"
-                                BorderBrush="Transparent"
-                                BorderThickness="1">
-                            <ContentPresenter />
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Root" Property="BorderBrush" Value="#355066" />
-                            </Trigger>
-                            <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="Root" Property="Background" Value="#1D2E36" />
-                                <Setter TargetName="Root" Property="BorderBrush" Value="{StaticResource AccentBrush}" />
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
+                <Style x:Key="AccentButtonStyle"
+                                TargetType="Button"
+                                BasedOn="{StaticResource ActionButtonStyle}">
+                        <Setter Property="Background"
+                                        Value="{StaticResource AccentBrush}"/>
+                        <Setter Property="Foreground"
+                                        Value="#0A1414"/>
+                        <Setter Property="BorderBrush"
+                                        Value="#7DE4C2"/>
+                        <Style.Triggers>
+                                <Trigger Property="IsMouseOver"
+                                                Value="True">
+                                        <Setter Property="Background"
+                                                        Value="#72D8B6"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed"
+                                                Value="True">
+                                        <Setter Property="Background"
+                                                        Value="#43AF8B"/>
+                                </Trigger>
+                        </Style.Triggers>
+                </Style>
 
-        <Style TargetType="DataGrid">
-            <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
-            <Setter Property="Background" Value="#111922" />
-            <Setter Property="BorderBrush" Value="#111922" />
-            <Setter Property="GridLinesVisibility" Value="Horizontal" />
-            <Setter Property="RowBackground" Value="#111922" />
-            <Setter Property="AlternatingRowBackground" Value="#18212B" />
-            <Setter Property="HeadersVisibility" Value="Column" />
-        </Style>
+                <Style x:Key="DangerButtonStyle"
+                                TargetType="Button"
+                                BasedOn="{StaticResource ActionButtonStyle}">
+                        <Setter Property="Background"
+                                        Value="#41232A"/>
+                        <Setter Property="BorderBrush"
+                                        Value="#78434B"/>
+                        <Style.Triggers>
+                                <Trigger Property="IsMouseOver"
+                                                Value="True">
+                                        <Setter Property="Background"
+                                                        Value="#5A2F38"/>
+                                </Trigger>
+                        </Style.Triggers>
+                </Style>
 
-        <Style TargetType="DataGridColumnHeader">
-            <Setter Property="Background" Value="#1B2631" />
-            <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
-            <Setter Property="BorderBrush" Value="#2C3D4E" />
-            <Setter Property="Padding" Value="10,8" />
-            <Setter Property="FontFamily" Value="Bahnschrift SemiBold" />
-        </Style>
-    </Window.Resources>
+                <Style x:Key="NavigationListStyle"
+                                TargetType="ListBox">
+                        <Setter Property="Background"
+                                        Value="Transparent"/>
+                        <Setter Property="BorderThickness"
+                                        Value="0"/>
+                </Style>
 
-    <Grid Background="{StaticResource WindowBackgroundBrush}">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="260" />
-            <ColumnDefinition Width="*" />
-        </Grid.ColumnDefinitions>
+                <Style x:Key="NavigationItemStyle"
+                                TargetType="ListBoxItem">
+                        <Setter Property="Margin"
+                                        Value="0,0,0,8"/>
+                        <Setter Property="Padding"
+                                        Value="0"/>
+                        <Setter Property="HorizontalContentAlignment"
+                                        Value="Stretch"/>
+                        <Setter Property="Template">
+                                <Setter.Value>
+                                        <ControlTemplate TargetType="ListBoxItem">
+                                                <Grid>
+                                                        <Border x:Name="Root"
+                                                                Padding="14,13"
+                                                                CornerRadius="6"
+                                                                Background="#151E23"
+                                                                BorderBrush="Transparent"
+                                                                BorderThickness="1">
+                                                                <ContentPresenter/>
+                                                        </Border>
+                                                        <Border x:Name="ActiveRail"
+                                                                Width="3"
+                                                                HorizontalAlignment="Left"
+                                                                VerticalAlignment="Stretch"
+                                                                Background="{StaticResource AccentBrush}"
+                                                                CornerRadius="2"
+                                                                Visibility="Collapsed"/>
+                                                </Grid>
+                                                <ControlTemplate.Triggers>
+                                                        <Trigger Property="IsMouseOver"
+                                                                        Value="True">
+                                                                <Setter TargetName="Root"
+                                                                                Property="BorderBrush"
+                                                                                Value="#476069"/>
+                                                        </Trigger>
+                                                        <Trigger Property="IsSelected"
+                                                                        Value="True">
+                                                                <Setter TargetName="Root"
+                                                                                Property="Background"
+                                                                                Value="#20342F"/>
+                                                                <Setter TargetName="Root"
+                                                                                Property="BorderBrush"
+                                                                                Value="#3B6558"/>
+                                                                <Setter TargetName="ActiveRail"
+                                                                                Property="Visibility"
+                                                                                Value="Visible"/>
+                                                        </Trigger>
+                                                </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                </Setter.Value>
+                        </Setter>
+                </Style>
 
-        <Border Grid.Column="0"
-                Margin="18"
-                Padding="18"
-                Background="{StaticResource SidebarBrush}"
-                BorderBrush="#263746"
-                BorderThickness="1"
-                CornerRadius="10">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="*" />
-                    <RowDefinition Height="Auto" />
-                </Grid.RowDefinitions>
+                <Style TargetType="DataGrid">
+                        <Setter Property="Foreground"
+                                        Value="{StaticResource TextBrush}"/>
+                        <Setter Property="Background"
+                                        Value="#111922"/>
+                        <Setter Property="BorderBrush"
+                                        Value="#111922"/>
+                        <Setter Property="GridLinesVisibility"
+                                        Value="Horizontal"/>
+                        <Setter Property="RowBackground"
+                                        Value="#111922"/>
+                        <Setter Property="AlternatingRowBackground"
+                                        Value="#18212B"/>
+                        <Setter Property="HeadersVisibility"
+                                        Value="Column"/>
+                </Style>
 
-                <StackPanel>
-                    <TextBlock FontFamily="Bahnschrift SemiBold" FontSize="24" Text="GRBL Scan Control" />
-                    <TextBlock Margin="0,8,0,0"
-                               Foreground="{StaticResource MutedTextBrush}"
-                               Text="连接控制串口和传感串口，配置扫描参数后开始测量，并在右侧查看结果图形。" />
-                </StackPanel>
+                <Style TargetType="DataGridColumnHeader">
+                        <Setter Property="Background"
+                                        Value="#1B2631"/>
+                        <Setter Property="Foreground"
+                                        Value="{StaticResource TextBrush}"/>
+                        <Setter Property="BorderBrush"
+                                        Value="#2C3D4E"/>
+                        <Setter Property="Padding"
+                                        Value="10,8"/>
+                        <Setter Property="FontFamily"
+                                        Value="Bahnschrift SemiBold"/>
+                </Style>
+                <Style TargetType="DataGridRow">
+                        <Setter Property="MinHeight"
+                                        Value="34"/>
+                        <Setter Property="Foreground"
+                                        Value="{StaticResource TextBrush}"/>
+                        <Setter Property="Background"
+                                        Value="#11191D"/>
+                        <Setter Property="BorderBrush"
+                                        Value="#26363B"/>
+                        <Style.Triggers>
+                                <Trigger Property="IsMouseOver"
+                                                Value="True">
+                                        <Setter Property="Background"
+                                                        Value="#20302F"/>
+                                </Trigger>
+                                <Trigger Property="IsSelected"
+                                                Value="True">
+                                        <Setter Property="Background"
+                                                        Value="#2A4B43"/>
+                                </Trigger>
+                        </Style.Triggers>
+                </Style>
+        </Window.Resources>
 
-                <Border Grid.Row="1"
-                        Margin="0,20,0,18"
-                        Padding="14"
-                        Background="#141E27"
-                        BorderBrush="#2C3E4D"
+        <Grid Background="{StaticResource WindowBackgroundBrush}">
+                <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="244"/>
+                        <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <Border Grid.Column="0"
+                        Margin="16"
+                        Padding="16"
+                        Background="{StaticResource SidebarBrush}"
+                        BorderBrush="#314148"
                         BorderThickness="1"
                         CornerRadius="8">
-                    <StackPanel>
-                        <TextBlock Foreground="{StaticResource MutedTextBrush}" Text="系统状态" />
-                        <TextBlock x:Name="StateTextBlock"
-                                   Margin="0,6,0,0"
-                                   FontFamily="Bahnschrift SemiBold"
-                                   FontSize="20"
-                                   Text="空闲" />
-                        <TextBlock x:Name="DeviceStatusTextBlock"
-                                   Margin="0,8,0,0"
-                                   TextWrapping="Wrap"
-                                   Foreground="{StaticResource MutedTextBrush}"
-                                   Text="未连接控制串口和传感串口" />
-                    </StackPanel>
+                        <Grid>
+                                <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <StackPanel>
+                                        <TextBlock FontFamily="Bahnschrift SemiBold"
+                                                        FontSize="23"
+                                                        Text="GRBL / SCAN"/>
+                                        <TextBlock Margin="0,8,0,0"
+                                                   Foreground="{StaticResource MutedTextBrush}"
+                                                   Text="设备测量控制台"/>
+                                        <TextBlock Margin="0,4,0,0"
+                                                   Foreground="#71838B"
+                                                   FontSize="11"
+                                                   Text="SERIAL CONTROL  /  SCANNING WORKSPACE"/>
+                                </StackPanel>
+
+                                <Border Grid.Row="2"
+                                        Margin="0,20,0,0"
+                                        Padding="14"
+                                        Background="#141E27"
+                                        BorderBrush="#2C3E4D"
+                                        BorderThickness="1"
+                                        CornerRadius="6">
+                                        <StackPanel>
+                                                <TextBlock Foreground="{StaticResource MutedTextBrush}"
+                                                                Text="系统状态"/>
+                                                <TextBlock x:Name="StateTextBlock"
+                                                           Margin="0,6,0,0"
+                                                           FontFamily="Bahnschrift SemiBold"
+                                                           FontSize="20"
+                                                           Text="空闲"/>
+                                                <TextBlock x:Name="DeviceStatusTextBlock"
+                                                           Margin="0,8,0,0"
+                                                           TextWrapping="Wrap"
+                                                           Foreground="{StaticResource MutedTextBrush}"
+                                                           Text="未连接控制串口和传感串口"/>
+                                        </StackPanel>
+                                </Border>
+
+                                <ListBox x:Name="NavigationListBox"
+                                         Grid.Row="1"
+                                         Style="{StaticResource NavigationListStyle}"
+                                         ItemContainerStyle="{StaticResource NavigationItemStyle}"
+                                         SelectionChanged="NavigationListBox_SelectionChanged">
+                                        <ListBoxItem Tag="Setup">
+                                                <StackPanel>
+                                                        <TextBlock FontFamily="Bahnschrift SemiBold"
+                                                                        FontSize="16"
+                                                                        Text="设备与参数"/>
+                                                        <TextBlock Margin="0,5,0,0"
+                                                                   Foreground="{StaticResource MutedTextBrush}"
+                                                                   Text="连接设备、设置命令和扫描参数"/>
+                                                </StackPanel>
+                                        </ListBoxItem>
+                                        <ListBoxItem Tag="Monitor">
+                                                <StackPanel>
+                                                        <TextBlock FontFamily="Bahnschrift SemiBold"
+                                                                        FontSize="16"
+                                                                        Text="扫描监控与图形"/>
+                                                        <TextBlock Margin="0,5,0,0"
+                                                                   Foreground="{StaticResource MutedTextBrush}"
+                                                                   Text="查看扫描进度、热力图和 3D 视图"/>
+                                                </StackPanel>
+                                        </ListBoxItem>
+                                        <ListBoxItem Tag="Data">
+                                                <StackPanel>
+                                                        <TextBlock FontFamily="Bahnschrift SemiBold"
+                                                                        FontSize="16"
+                                                                        Text="数据与日志"/>
+                                                        <TextBlock Margin="0,5,0,0"
+                                                                   Foreground="{StaticResource MutedTextBrush}"
+                                                                   Text="查看点位明细、串口日志和导出结果"/>
+                                                </StackPanel>
+                                        </ListBoxItem>
+                                </ListBox>
+
+                        </Grid>
                 </Border>
 
-                <ListBox x:Name="NavigationListBox"
-                         Grid.Row="2"
-                         Style="{StaticResource NavigationListStyle}"
-                         ItemContainerStyle="{StaticResource NavigationItemStyle}"
-                         SelectionChanged="NavigationListBox_SelectionChanged">
-                    <ListBoxItem Tag="Setup">
-                        <StackPanel>
-                            <TextBlock FontFamily="Bahnschrift SemiBold" FontSize="16" Text="设备与参数" />
-                            <TextBlock Margin="0,5,0,0"
-                                       Foreground="{StaticResource MutedTextBrush}"
-                                       Text="连接设备、设置命令和扫描参数" />
-                        </StackPanel>
-                    </ListBoxItem>
-                    <ListBoxItem Tag="Monitor">
-                        <StackPanel>
-                            <TextBlock FontFamily="Bahnschrift SemiBold" FontSize="16" Text="扫描监控与图形" />
-                            <TextBlock Margin="0,5,0,0"
-                                       Foreground="{StaticResource MutedTextBrush}"
-                                       Text="查看扫描进度、热力图和 3D 视图" />
-                        </StackPanel>
-                    </ListBoxItem>
-                    <ListBoxItem Tag="Data">
-                        <StackPanel>
-                            <TextBlock FontFamily="Bahnschrift SemiBold" FontSize="16" Text="数据与日志" />
-                            <TextBlock Margin="0,5,0,0"
-                                       Foreground="{StaticResource MutedTextBrush}"
-                                       Text="查看点位明细、串口日志和导出结果" />
-                        </StackPanel>
-                    </ListBoxItem>
-                </ListBox>
+                <Grid Grid.Column="1"
+                                Margin="0,16,16,16">
+                        <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
 
-            </Grid>
-        </Border>
-
-        <Grid Grid.Column="1" Margin="0,18,18,18">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="*" />
-            </Grid.RowDefinitions>
-
-            <Border Grid.Row="0"
-                    Padding="22,18"
-                    Background="#121A22"
-                    BorderBrush="#293A49"
-                    BorderThickness="1"
-                    CornerRadius="10">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-
-                    <StackPanel>
-                        <TextBlock x:Name="CurrentPageTitleTextBlock"
-                                   FontFamily="Bahnschrift SemiBold"
-                                   FontSize="28"
-                                   Text="设备与参数" />
-                        <TextBlock x:Name="CurrentPageHintTextBlock"
-                                   Margin="0,6,0,0"
-                                   Foreground="{StaticResource MutedTextBrush}"
-                                   Text="连接设备、配置参数并开始扫描" />
-                    </StackPanel>
-
-                    <Border Grid.Column="1"
-                            Padding="14,10"
-                            Background="#18222C"
-                            BorderBrush="#304353"
-                            BorderThickness="1"
-                            CornerRadius="8">
-                        <StackPanel>
-                            <TextBlock Foreground="{StaticResource MutedTextBrush}" Text="当前预设参数" />
-                            <TextBlock Margin="0,4,0,0"
-                                       FontFamily="Bahnschrift SemiBold"
-                                       FontSize="16"
-                                       Text="未加载" />
-                        </StackPanel>
-                    </Border>
-                </Grid>
-            </Border>
-
-            <Grid Grid.Row="1" Margin="0,18,0,0">
-                <Grid x:Name="SetupPage">
-                    <ScrollViewer VerticalScrollBarVisibility="Auto">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="1.05*" />
-                                <ColumnDefinition Width="18" />
-                                <ColumnDefinition Width="1*" />
-                            </Grid.ColumnDefinitions>
-
-                            <StackPanel Grid.Column="0">
-                                <Border Style="{StaticResource CardBorderStyle}" Margin="0,0,0,16">
-                                    <StackPanel>
-                                        <TextBlock Style="{StaticResource SectionTitleStyle}" Text="串口连接" />
-                                        <Grid Margin="0,0,0,8">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="*" />
-                                            </Grid.ColumnDefinitions>
-                                            <StackPanel Grid.Column="0" Margin="0,0,10,0">
-                                                <Label Content="控制串口" />
-                                                <ComboBox x:Name="ControlPortComboBox" />
-                                            </StackPanel>
-                                            <StackPanel Grid.Column="1">
-                                                <Label Content="控制波特率" />
-                                                <ComboBox x:Name="ControlBaudComboBox" />
-                                            </StackPanel>
-                                        </Grid>
-                                        <Grid Margin="0,0,0,8">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="*" />
-                                            </Grid.ColumnDefinitions>
-                                            <StackPanel Grid.Column="0" Margin="0,0,10,0">
-                                                <Label Content="传感串口" />
-                                                <ComboBox x:Name="DataPortComboBox" />
-                                            </StackPanel>
-                                            <StackPanel Grid.Column="1">
-                                                <Label Content="传感波特率" />
-                                                <ComboBox x:Name="DataBaudComboBox" />
-                                            </StackPanel>
-                                        </Grid>
-                                        <WrapPanel>
-                                            <Button Style="{StaticResource ActionButtonStyle}" Click="RefreshPortsButton_Click" Content="刷新串口" />
-                                            <Button Style="{StaticResource AccentButtonStyle}" Click="ConnectButton_Click" Content="连接设备" />
-                                            <Button Style="{StaticResource DangerButtonStyle}" Click="DisconnectButton_Click" Content="断开连接" />
-                                        </WrapPanel>
-                                    </StackPanel>
-                                </Border>
-
-                                <Border Style="{StaticResource CardBorderStyle}">
-                                    <StackPanel>
-                                        <TextBlock Style="{StaticResource SectionTitleStyle}" Text="控制与指令" />
-                                        <Label Content="抬笔命令" />
-                                        <TextBox x:Name="RaiseCommandTextBox" Text="$J=G91 Z-10 F1500" />
-                                        <Label Content="落笔命令" />
-                                        <TextBox x:Name="DropCommandTextBox" Text="$J=G91 Z10 F500" />
-                                        <Label Content="保持命令" />
-                                        <TextBox x:Name="HoldCommandTextBox" Text="$J=G90 Z0.0 F500" />
-                                        <Label Content="手动指令" />
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="Auto" />
-                                            </Grid.ColumnDefinitions>
-                                            <TextBox x:Name="RawCommandTextBox" Margin="0,0,10,12" Text="$J=G90 X10 Y10 F500" />
-                                            <Button Grid.Column="1"
-                                                    Width="96"
-                                                    Height="40"
-                                                    Style="{StaticResource ActionButtonStyle}"
-                                                    Click="SendRawCommandButton_Click"
-                                                    Content="发送指令" />
-                                        </Grid>
-                                        <Button Style="{StaticResource AccentButtonStyle}"
-                                                Click="OpenProbeControlWindowButton_Click"
-                                                Content="打开控制面板" />
-                                    </StackPanel>
-                                </Border>
-                            </StackPanel>
-
-                            <StackPanel Grid.Column="2">
-                                <Border Style="{StaticResource CardBorderStyle}" Margin="0,0,0,16">
-                                    <StackPanel>
-                                        <TextBlock Style="{StaticResource SectionTitleStyle}" Text="扫描参数设置" />
-                                        <Grid Margin="0,0,0,8">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="*" />
-                                            </Grid.ColumnDefinitions>
-                                            <StackPanel Grid.Column="0" Margin="0,0,10,0">
-                                                <Label Content="X 扫描范围" />
-                                                <TextBox x:Name="MaxXTextBox" Text="100" />
-                                            </StackPanel>
-                                            <StackPanel Grid.Column="1">
-                                                <Label Content="Y 扫描范围" />
-                                                <TextBox x:Name="MaxYTextBox" Text="80" />
-                                            </StackPanel>
-                                        </Grid>
-                                        <Grid Margin="0,0,0,8">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="*" />
-                                            </Grid.ColumnDefinitions>
-                                            <StackPanel Grid.Column="0" Margin="0,0,10,0">
-                                                <Label Content="X 步长 (mm)" />
-                                                <TextBox x:Name="StepXTextBox" Text="5" />
-                                            </StackPanel>
-                                            <StackPanel Grid.Column="1" Margin="0,0,10,0">
-                                                <Label Content="Y 步长 (mm)" />
-                                                <TextBox x:Name="StepYTextBox" Text="5" />
-                                            </StackPanel>
-                                            <StackPanel Grid.Column="2">
-                                                <Label Content="扫描速度" />
-                                                <TextBox x:Name="SpeedTextBox" Text="500" />
-                                            </StackPanel>
-                                        </Grid>
-                                        <Grid Margin="0,0,0,8">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="*" />
-                                            </Grid.ColumnDefinitions>
-                                            <StackPanel Grid.Column="0" Margin="0,0,10,0">
-                                                <Label Content="扫描形状" />
-                                                <ComboBox x:Name="ShapeComboBox">
-                                                    <ComboBoxItem Content="矩形" />
-                                                    <ComboBoxItem Content="圆形" />
-                                                </ComboBox>
-                                            </StackPanel>
-                                            <StackPanel Grid.Column="1">
-                                                <Label Content="圆形半径" />
-                                                <TextBox x:Name="RadiusTextBox" Text="40" />
-                                            </StackPanel>
-                                        </Grid>
-                                        <Grid Margin="0,0,0,8">
-                                            <StackPanel>
-                                                <Label Content="滤波算法" />
-                                                <ComboBox x:Name="FilterAlgorithmComboBox">
-                                                    <ComboBoxItem Content="平均值" />
-                                                    <ComboBoxItem Content="中值" />
-                                                    <ComboBoxItem Content="去极值平均" />
-                                                </ComboBox>
-                                            </StackPanel>
-                                        <Grid Margin="0,0,0,8">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="*" />
-                                            </Grid.ColumnDefinitions>
-                                            <StackPanel Grid.Column="0" Margin="0,0,10,0">
-                                                <Label Content="CH2 模式" />
-                                                <ComboBox x:Name="Channel2ModeComboBox">
-                                                    <ComboBoxItem Content="关闭" Tag="Off" IsSelected="True" />
-                                                    <ComboBoxItem Content="辅助扫描" Tag="AuxScan" />
-                                                    <ComboBoxItem Content="辅助滤波" Tag="AuxFilter" />
-                                                </ComboBox>
-                                                <Grid Margin="0,6,0,0">
-                                                    <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="*" />
-                                                        <ColumnDefinition Width="*" />
-                                                    </Grid.ColumnDefinitions>
-                                                    <StackPanel Grid.Column="0" Margin="0,0,6,0">
-                                                        <Label Content="CH2 X 增量" />
-                                                        <TextBox x:Name="Channel2OffsetXTextBox" Text="1" />
-                                                    </StackPanel>
-                                                    <StackPanel Grid.Column="1">
-                                                        <Label Content="CH2 Y 增量" />
-                                                        <TextBox x:Name="Channel2OffsetYTextBox" Text="0" />
-                                                    </StackPanel>
-                                                </Grid>
-                                            </StackPanel>
-                                            <StackPanel Grid.Column="1" Margin="0,0,10,0">
-                                                <Label Content="CH3 模式" />
-                                                <ComboBox x:Name="Channel3ModeComboBox">
-                                                    <ComboBoxItem Content="关闭" Tag="Off" IsSelected="True" />
-                                                    <ComboBoxItem Content="辅助扫描" Tag="AuxScan" />
-                                                    <ComboBoxItem Content="辅助滤波" Tag="AuxFilter" />
-                                                </ComboBox>
-                                                <Grid Margin="0,6,0,0">
-                                                    <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="*" />
-                                                        <ColumnDefinition Width="*" />
-                                                    </Grid.ColumnDefinitions>
-                                                    <StackPanel Grid.Column="0" Margin="0,0,6,0">
-                                                        <Label Content="CH3 X 增量" />
-                                                        <TextBox x:Name="Channel3OffsetXTextBox" Text="2" />
-                                                    </StackPanel>
-                                                    <StackPanel Grid.Column="1">
-                                                        <Label Content="CH3 Y 增量" />
-                                                        <TextBox x:Name="Channel3OffsetYTextBox" Text="0" />
-                                                    </StackPanel>
-                                                </Grid>
-                                            </StackPanel>
-                                            <StackPanel Grid.Column="2">
-                                                <Label Content="CH4 模式" />
-                                                <ComboBox x:Name="Channel4ModeComboBox">
-                                                    <ComboBoxItem Content="关闭" Tag="Off" IsSelected="True" />
-                                                    <ComboBoxItem Content="辅助扫描" Tag="AuxScan" />
-                                                    <ComboBoxItem Content="辅助滤波" Tag="AuxFilter" />
-                                                </ComboBox>
-                                                <Grid Margin="0,6,0,0">
-                                                    <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="*" />
-                                                        <ColumnDefinition Width="*" />
-                                                    </Grid.ColumnDefinitions>
-                                                    <StackPanel Grid.Column="0" Margin="0,0,6,0">
-                                                        <Label Content="CH4 X 增量" />
-                                                        <TextBox x:Name="Channel4OffsetXTextBox" Text="3" />
-                                                    </StackPanel>
-                                                    <StackPanel Grid.Column="1">
-                                                        <Label Content="CH4 Y 增量" />
-                                                        <TextBox x:Name="Channel4OffsetYTextBox" Text="0" />
-                                                    </StackPanel>
-                                                </Grid>
-                                            </StackPanel>
-                                        </Grid>
-                                        </Grid>
-                                        <WrapPanel>
-                                            <Button Style="{StaticResource AccentButtonStyle}" Click="StartScanButton_Click" Content="开始扫描" />
-                                            <Button Style="{StaticResource DangerButtonStyle}" Click="StopScanButton_Click" Content="停止扫描" />
-                                            <Button Style="{StaticResource ActionButtonStyle}" Click="ResumeScanButton_Click" Content="继续扫描" />
-                                            <Button Style="{StaticResource ActionButtonStyle}" Click="ReturnToOriginButton_Click" Content="返回原点" />
-                                            <Button Style="{StaticResource ActionButtonStyle}" Click="SaveCsvButton_Click" Content="导出 CSV" />
-                                        </WrapPanel>
-                                    </StackPanel>
-                                </Border>
-
-                                <Border Style="{StaticResource CardBorderStyle}" Margin="0,0,0,16">
-                                    <StackPanel>
-                                        <TextBlock Style="{StaticResource SectionTitleStyle}" Text="预设参数" />
-                                        <TextBlock Margin="0,0,0,12"
-                                                   Foreground="{StaticResource MutedTextBrush}"
-                                                   Text="保存和复用常用扫描参数组合"
-                                                   TextWrapping="Wrap" />
-                                        <Label Content="预设名称" />
-                                        <TextBox x:Name="PresetNameTextBox" Text="默认参数组" />
-                                        <Label Content="已保存参数组" />
-                                        <ComboBox x:Name="PresetComboBox"
-                                                  DisplayMemberPath="Name" />
-                                        <WrapPanel>
-                                            <Button Style="{StaticResource ActionButtonStyle}"
-                                                    Click="SavePresetButton_Click"
-                                                    Content="保存参数组" />
-                                            <Button Style="{StaticResource ActionButtonStyle}"
-                                                    Click="LoadPresetButton_Click"
-                                                    Content="加载预设" />
-                                            <Button Style="{StaticResource AccentButtonStyle}"
-                                                    Click="UsePresetScanButton_Click"
-                                                    Content="使用预设扫描" />
-                                            <Button Style="{StaticResource DangerButtonStyle}"
-                                                    Click="DeletePresetButton_Click"
-                                                    Content="删除参数组" />
-                                        </WrapPanel>
-                                    </StackPanel>
-                                </Border>
-
-                                <Border Style="{StaticResource CardBorderStyle}">
-                                    <StackPanel>
-                                        <TextBlock Style="{StaticResource SectionTitleStyle}" Text="说明" />
-                                        <TextBlock Foreground="{StaticResource MutedTextBrush}" TextWrapping="Wrap">
-                                            扫描完成后，可在监控页查看热力图与三维视图，在数据页查看点位明细、串口日志，并导出 CSV 数据。
-                                        </TextBlock>
-                                    </StackPanel>
-                                </Border>
-                            </StackPanel>
-                        </Grid>
-                    </ScrollViewer>
-                </Grid>
-
-                <Grid x:Name="MonitorPage" Visibility="Collapsed">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="*" />
-                    </Grid.RowDefinitions>
-
-                    <Grid Margin="0,0,0,16">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="12" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="12" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-
-                        <Border Grid.Column="0"
-                                Style="{StaticResource CardBorderStyle}"
-                                Background="{StaticResource PanelAltBrush}"
-                                MinHeight="102">
-                            <StackPanel>
-                                <TextBlock Foreground="{StaticResource MutedTextBrush}" Text="扫描进度" />
-                                <TextBlock x:Name="ProgressTextBlock"
-                                           Margin="0,8,0,0"
-                                           FontFamily="Bahnschrift SemiBold"
-                                           FontSize="24"
-                                           Text="0 / 0" />
-                            </StackPanel>
-                        </Border>
-
-                        <Border Grid.Column="2"
-                                Style="{StaticResource CardBorderStyle}"
-                                MinHeight="102">
-                            <StackPanel>
-                                <TextBlock Foreground="{StaticResource MutedTextBrush}" Text="最近电压" />
-                                <TextBlock x:Name="LastVoltageTextBlock"
-                                           Margin="0,8,0,0"
-                                           FontFamily="Bahnschrift SemiBold"
-                                           FontSize="24"
-                                           Text="-- V" />
-                            </StackPanel>
-                        </Border>
-
-                        <Border Grid.Column="4"
-                                Style="{StaticResource CardBorderStyle}"
-                                MinHeight="102">
-                            <StackPanel>
-                                <TextBlock Foreground="{StaticResource MutedTextBrush}" Text="当前位置" />
-                                <TextBlock x:Name="LastPointTextBlock"
-                                           Margin="0,8,0,0"
-                                           FontFamily="Bahnschrift SemiBold"
-                                           FontSize="24"
-                                           Text="(0, 0)" />
-                            </StackPanel>
-                        </Border>
-                    </Grid>
-
-                    <Grid Grid.Row="1">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="1.15*" />
-                            <ColumnDefinition Width="18" />
-                            <ColumnDefinition Width="1*" />
-                        </Grid.ColumnDefinitions>
-
-                        <Border Grid.Column="0" Style="{StaticResource CardBorderStyle}">
-                            <Grid>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="*" />
-                                </Grid.RowDefinitions>
+                        <Border Grid.Row="0"
+                                Padding="24,18"
+                                Background="#151D22"
+                                BorderBrush="#314249"
+                                BorderThickness="1"
+                                CornerRadius="8">
                                 <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="Auto" />
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Style="{StaticResource SectionTitleStyle}" Text="扫描热力图" />
-                                    <TextBlock Grid.Column="1"
-                                               VerticalAlignment="Center"
-                                               Foreground="{StaticResource MutedTextBrush}"
-                                               Text="电势分布热力图" />
-                                </Grid>
-                                <ScottPlot:WpfPlot x:Name="HeatmapPlot" Grid.Row="1" />
-                            </Grid>
-                        </Border>
-
-                        <Grid Grid.Column="2">
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto" />
-                                <RowDefinition Height="*" />
-                            </Grid.RowDefinitions>
-
-                            <Border Style="{StaticResource CardBorderStyle}" Margin="0,0,0,16">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="*" />
-                                    </Grid.ColumnDefinitions>
-                                    <Button Grid.Column="0"
-                                            Style="{StaticResource AccentButtonStyle}"
-                                            Click="StartScanButton_Click"
-                                            Content="开始扫描" />
-                                    <Button Grid.Column="1"
-                                            Style="{StaticResource DangerButtonStyle}"
-                                            Click="StopScanButton_Click"
-                                            Content="停止扫描" />
-                                    <Button Grid.Column="2"
-                                            Style="{StaticResource ActionButtonStyle}"
-                                            Click="ResumeScanButton_Click"
-                                            Content="继续扫描" />
-                                    <Button Grid.Column="3"
-                                            Style="{StaticResource ActionButtonStyle}"
-                                            Click="SaveCsvButton_Click"
-                                            Content="导出 CSV" />
-                                    <Button Grid.Column="4"
-                                            Style="{StaticResource ActionButtonStyle}"
-                                            Click="ReturnToOriginButton_Click"
-                                            Content="返回原点" />
-                                </Grid>
-                            </Border>
-
-                            <Border Grid.Row="1" Style="{StaticResource CardBorderStyle}">
-                                <Grid>
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="Auto" />
-                                        <RowDefinition Height="*" />
-                                        <RowDefinition Height="Auto" />
-                                    </Grid.RowDefinitions>
-                                    <Grid>
                                         <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
-                                        <TextBlock Style="{StaticResource SectionTitleStyle}" Text="三维视图" />
-                                        <TextBlock Grid.Column="1"
-                                                   VerticalAlignment="Center"
-                                                   Foreground="{StaticResource MutedTextBrush}"
-                                                   Text="显示扫描点的三维空间电压分布" />
-                                    </Grid>
 
-                                    <Border Grid.Row="1"
-                                            Margin="0,14,0,14"
-                                            Background="#101720"
-                                            BorderBrush="#2A3C4B"
-                                            BorderThickness="1"
-                                            CornerRadius="8">
-                                        <h:HelixViewport3D x:Name="SurfaceViewport"
-                                                           Background="#101720"
-                                                           ShowCoordinateSystem="True"
-                                                           ShowViewCube="True"
-                                                           ZoomExtentsWhenLoaded="False"
-                                                           RotateAroundMouseDownPoint="True" />
-                                    </Border>
-
-                                    <Grid Grid.Row="2">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="Auto" />
-                                        </Grid.ColumnDefinitions>
-                                        <StackPanel Grid.Column="0">
-                                            <TextBlock Foreground="{StaticResource MutedTextBrush}" Text="高度缩放" />
-                                            <Slider x:Name="HeightScaleSlider"
-                                                    Minimum="0.5"
-                                                    Maximum="3"
-                                                    Value="1.2"
-                                                    ValueChanged="SurfaceControl_ValueChanged" />
+                                        <StackPanel>
+                                                <TextBlock x:Name="CurrentPageTitleTextBlock"
+                                                           FontFamily="Bahnschrift SemiBold"
+                                                           FontSize="26"
+                                                           Text="设备与参数"/>
+                                                <TextBlock x:Name="CurrentPageHintTextBlock"
+                                                           Margin="0,6,0,0"
+                                                           Foreground="{StaticResource MutedTextBrush}"
+                                                           Text="连接设备、配置参数并开始扫描"/>
                                         </StackPanel>
-                                        <TextBlock Grid.Column="1"
-                                                   Margin="18,0,0,0"
-                                                   VerticalAlignment="Center"
-                                                   Foreground="{StaticResource MutedTextBrush}"
-                                                   Text="鼠标左键旋转 · 滚轮缩放 · 右键平移" />
-                                    </Grid>
+
+                                        <Border Grid.Column="1"
+                                                Padding="14,10"
+                                                Background="#1D2A2D"
+                                                BorderBrush="#3A5B52"
+                                                BorderThickness="1"
+                                                CornerRadius="6">
+                                                <StackPanel>
+                                                        <TextBlock Foreground="{StaticResource MutedTextBrush}"
+                                                                        Text="当前预设参数"/>
+                                                        <TextBlock Margin="0,4,0,0"
+                                                                   FontFamily="Bahnschrift SemiBold"
+                                                                   FontSize="16"
+                                                                   Foreground="{StaticResource AccentBrush}"
+                                                                   Text="未加载"/>
+                                                        <TextBlock Margin="0,6,0,0"
+                                                                   Foreground="#91A59E"
+                                                                   FontSize="11"
+                                                                   Text="4-CHANNEL CAPTURE"/>
+                                                </StackPanel>
+                                        </Border>
                                 </Grid>
-                            </Border>
-                        </Grid>
-                    </Grid>
-                </Grid>
-
-                <Grid x:Name="DataPage" Visibility="Collapsed">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="*" />
-                    </Grid.RowDefinitions>
-
-                    <Border Style="{StaticResource CardBorderStyle}" Margin="0,0,0,16">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
-                            <StackPanel>
-                                <TextBlock Style="{StaticResource SectionTitleStyle}" Text="数据与日志" />
-                                <TextBlock Foreground="{StaticResource MutedTextBrush}" Text="查看扫描过程中的串口通信记录与系统日志。" />
-                            </StackPanel>
-                            <Button Grid.Column="1"
-                                    Style="{StaticResource ActionButtonStyle}"
-                                    Click="SaveCsvButton_Click"
-                                    Content="导出 CSV" />
-                        </Grid>
-                    </Border>
-
-                    <Grid Grid.Row="1">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="1.08*" />
-                            <ColumnDefinition Width="18" />
-                            <ColumnDefinition Width="1*" />
-                        </Grid.ColumnDefinitions>
-
-                        <Border Grid.Column="0" Style="{StaticResource CardBorderStyle}">
-                            <Grid>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="*" />
-                                </Grid.RowDefinitions>
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="Auto" />
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Style="{StaticResource SectionTitleStyle}" Text="串口日志" />
-                                    <Button Grid.Column="1"
-                                            Width="72"
-                                            Height="32"
-                                            Style="{StaticResource ActionButtonStyle}"
-                                            Click="ClearLogButton_Click"
-                                            Content="清空日志" />
-                                </Grid>
-                                <Grid Grid.Row="1" Margin="0,0,0,10">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto" />
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="Auto" />
-                                    </Grid.ColumnDefinitions>
-                                    <ComboBox x:Name="SendTargetComboBox"
-                                              Width="112"
-                                              Margin="0,0,10,0"
-                                              SelectedIndex="0">
-                                        <ComboBoxItem Content="控制串口" />
-                                        <ComboBoxItem Content="传感串口" />
-                                    </ComboBox>
-                                    <TextBox x:Name="LogCommandTextBox"
-                                             Grid.Column="1"
-                                             Margin="0,0,10,0"
-                                             Text="$J=G90 X0 Y0 F500" />
-                                    <Button Grid.Column="2"
-                                            Width="72"
-                                            Height="40"
-                                            Style="{StaticResource ActionButtonStyle}"
-                                            Click="SendLogCommandButton_Click"
-                                            Content="发送" />
-                                </Grid>
-                                <TextBox x:Name="LogTextBox"
-                                         Grid.Row="2"
-                                         Margin="0"
-                                         Padding="12"
-                                         Background="#101720"
-                                         BorderBrush="#101720"
-                                         AcceptsReturn="True"
-                                         IsReadOnly="True"
-                                         VerticalScrollBarVisibility="Auto"
-                                         TextWrapping="Wrap" />
-                            </Grid>
                         </Border>
 
-                        <Border Grid.Column="2" Style="{StaticResource CardBorderStyle}">
-                            <Grid>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="*" />
-                                </Grid.RowDefinitions>
-                                <TextBlock Style="{StaticResource SectionTitleStyle}" Text="点位数据" />
-                                <DataGrid x:Name="PointsDataGrid"
-                                          Grid.Row="1"
-                                          AutoGenerateColumns="False"
-                                          CanUserAddRows="False"
-                                          IsReadOnly="True"
-                                          BorderThickness="0">
-                                    <DataGrid.Columns>
-                                        <DataGridTextColumn Header="序号" Binding="{Binding Order}" Width="80" />
-                                        <DataGridTextColumn Header="X" Binding="{Binding X, StringFormat=F2}" Width="*" />
-                                        <DataGridTextColumn Header="Y" Binding="{Binding Y, StringFormat=F2}" Width="*" />
-                                        <DataGridTextColumn Header="电压" Binding="{Binding VoltageDisplay}" Width="*" />
-                                    </DataGrid.Columns>
-                                </DataGrid>
-                            </Grid>
-                        </Border>
-                    </Grid>
+                        <Grid Grid.Row="1"
+                                        Margin="0,16,0,0">
+                                <Grid x:Name="SetupPage">
+                                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                                <Grid>
+                                                        <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="0.92*"/>
+                                                                <ColumnDefinition Width="16"/>
+                                                                <ColumnDefinition Width="1.28*"/>
+                                                        </Grid.ColumnDefinitions>
+
+                                                        <StackPanel Grid.Column="0">
+                                                                <Border Style="{StaticResource CardBorderStyle}"
+                                                                                Margin="0,0,0,16">
+                                                                        <StackPanel>
+                                                                                <TextBlock Style="{StaticResource SectionTitleStyle}"
+                                                                                                Text="串口连接"/>
+                                                                                <Grid Margin="0,0,0,8">
+                                                                                        <Grid.ColumnDefinitions>
+                                                                                                <ColumnDefinition Width="*"/>
+                                                                                                <ColumnDefinition Width="*"/>
+                                                                                        </Grid.ColumnDefinitions>
+                                                                                        <StackPanel Grid.Column="0"
+                                                                                                        Margin="0,0,10,0">
+                                                                                                <Label Content="控制串口"/>
+                                                                                                <ComboBox x:Name="ControlPortComboBox"/>
+                                                                                        </StackPanel>
+                                                                                        <StackPanel Grid.Column="1">
+                                                                                                <Label Content="控制波特率"/>
+                                                                                                <ComboBox x:Name="ControlBaudComboBox"/>
+                                                                                        </StackPanel>
+                                                                                </Grid>
+                                                                                <Grid Margin="0,0,0,8">
+                                                                                        <Grid.ColumnDefinitions>
+                                                                                                <ColumnDefinition Width="*"/>
+                                                                                                <ColumnDefinition Width="*"/>
+                                                                                        </Grid.ColumnDefinitions>
+                                                                                        <StackPanel Grid.Column="0"
+                                                                                                        Margin="0,0,10,0">
+                                                                                                <Label Content="传感串口"/>
+                                                                                                <ComboBox x:Name="DataPortComboBox"/>
+                                                                                        </StackPanel>
+                                                                                        <StackPanel Grid.Column="1">
+                                                                                                <Label Content="传感波特率"/>
+                                                                                                <ComboBox x:Name="DataBaudComboBox"/>
+                                                                                        </StackPanel>
+                                                                                </Grid>
+                                                                                <WrapPanel>
+                                                                                        <Button Style="{StaticResource ActionButtonStyle}"
+                                                                                                        Click="RefreshPortsButton_Click"
+                                                                                                        Content="刷新串口"/>
+                                                                                        <Button Style="{StaticResource AccentButtonStyle}"
+                                                                                                        Click="ConnectButton_Click"
+                                                                                                        Content="连接设备"/>
+                                                                                        <Button Style="{StaticResource DangerButtonStyle}"
+                                                                                                        Click="DisconnectButton_Click"
+                                                                                                        Content="断开连接"/>
+                                                                                </WrapPanel>
+                                                                        </StackPanel>
+                                                                </Border>
+
+                                                                <Border Style="{StaticResource CardBorderStyle}">
+                                                                        <StackPanel>
+                                                                                <TextBlock Style="{StaticResource SectionTitleStyle}"
+                                                                                                Text="控制与指令"/>
+                                                                                <Label Content="抬笔命令"/>
+                                                                                <TextBox x:Name="RaiseCommandTextBox"
+                                                                                                Text="$J=G91 Z-10 F1500"/>
+                                                                                <Label Content="落笔命令"/>
+                                                                                <TextBox x:Name="DropCommandTextBox"
+                                                                                                Text="$J=G91 Z10 F500"/>
+                                                                                <Label Content="保持命令"/>
+                                                                                <TextBox x:Name="HoldCommandTextBox"
+                                                                                                Text="$J=G90 Z0.0 F500"/>
+                                                                                <Label Content="手动指令"/>
+                                                                                <Grid>
+                                                                                        <Grid.ColumnDefinitions>
+                                                                                                <ColumnDefinition Width="*"/>
+                                                                                                <ColumnDefinition Width="Auto"/>
+                                                                                        </Grid.ColumnDefinitions>
+                                                                                        <TextBox x:Name="RawCommandTextBox"
+                                                                                                        Margin="0,0,10,12"
+                                                                                                        Text="$J=G90 X10 Y10 F500"/>
+                                                                                        <Button Grid.Column="1"
+                                                                                                Width="96"
+                                                                                                Height="40"
+                                                                                                Style="{StaticResource ActionButtonStyle}"
+                                                                                                Click="SendRawCommandButton_Click"
+                                                                                                Content="发送指令"/>
+                                                                                </Grid>
+                                                                                <Button Style="{StaticResource AccentButtonStyle}"
+                                                                                        Click="OpenProbeControlWindowButton_Click"
+                                                                                        Content="打开控制面板"/>
+                                                                        </StackPanel>
+                                                                </Border>
+
+                                                                <Border Style="{StaticResource CardBorderStyle}">
+                                                                        <StackPanel>
+                                                                                <TextBlock Style="{StaticResource SectionTitleStyle}"
+                                                                                           Text="说明"/>
+                                                                                <TextBlock Foreground="{StaticResource MutedTextBrush}"
+                                                                                           TextWrapping="Wrap">
+                                            扫描完成后，可在监控页查看热力图与三维视图，在数据页查看点位明细、串口日志，并导出 CSV 数据。
+                                                                                </TextBlock>
+                                                                        </StackPanel>
+                                                                </Border>
+                                                        </StackPanel>
+
+                                                        <StackPanel Grid.Column="2">
+                                                                <Border Style="{StaticResource CardBorderStyle}"
+                                                                                Margin="0,0,0,16">
+                                                                        <StackPanel>
+                                                                                <TextBlock Style="{StaticResource SectionTitleStyle}"
+                                                                                                Text="扫描参数设置"/>
+                                                                                <Grid Margin="0,0,0,8">
+                                                                                        <Grid.ColumnDefinitions>
+                                                                                                <ColumnDefinition Width="*"/>
+                                                                                                <ColumnDefinition Width="*"/>
+                                                                                        </Grid.ColumnDefinitions>
+                                                                                        <StackPanel Grid.Column="0"
+                                                                                                        Margin="0,0,10,0">
+                                                                                                <Label Content="X 扫描范围"/>
+                                                                                                <TextBox x:Name="MaxXTextBox"
+                                                                                                                Text="100"/>
+                                                                                        </StackPanel>
+                                                                                        <StackPanel Grid.Column="1">
+                                                                                                <Label Content="Y 扫描范围"/>
+                                                                                                <TextBox x:Name="MaxYTextBox"
+                                                                                                                Text="80"/>
+                                                                                        </StackPanel>
+                                                                                </Grid>
+                                                                                <Grid Margin="0,0,0,8">
+                                                                                        <Grid.ColumnDefinitions>
+                                                                                                <ColumnDefinition Width="*"/>
+                                                                                                <ColumnDefinition Width="*"/>
+                                                                                                <ColumnDefinition Width="*"/>
+                                                                                        </Grid.ColumnDefinitions>
+                                                                                        <StackPanel Grid.Column="0"
+                                                                                                        Margin="0,0,10,0">
+                                                                                                <Label Content="X 步长 (mm)"/>
+                                                                                                <TextBox x:Name="StepXTextBox"
+                                                                                                                Text="5"/>
+                                                                                        </StackPanel>
+                                                                                        <StackPanel Grid.Column="1"
+                                                                                                        Margin="0,0,10,0">
+                                                                                                <Label Content="Y 步长 (mm)"/>
+                                                                                                <TextBox x:Name="StepYTextBox"
+                                                                                                                Text="5"/>
+                                                                                        </StackPanel>
+                                                                                        <StackPanel Grid.Column="2">
+                                                                                                <Label Content="扫描速度"/>
+                                                                                                <TextBox x:Name="SpeedTextBox"
+                                                                                                                Text="500"/>
+                                                                                        </StackPanel>
+                                                                                </Grid>
+                                                                                <Grid Margin="0,0,0,8">
+                                                                                        <Grid.ColumnDefinitions>
+                                                                                                <ColumnDefinition Width="*"/>
+                                                                                                <ColumnDefinition Width="*"/>
+                                                                                        </Grid.ColumnDefinitions>
+                                                                                        <StackPanel Grid.Column="0"
+                                                                                                        Margin="0,0,10,0">
+                                                                                                <Label Content="扫描形状"/>
+                                                                                                <ComboBox x:Name="ShapeComboBox">
+                                                                                                        <ComboBoxItem Content="矩形"/>
+                                                                                                        <ComboBoxItem Content="圆形"/>
+                                                                                                </ComboBox>
+                                                                                        </StackPanel>
+                                                                                        <StackPanel Grid.Column="1">
+                                                                                                <Label Content="圆形半径"/>
+                                                                                                <TextBox x:Name="RadiusTextBox"
+                                                                                                                Text="40"/>
+                                                                                        </StackPanel>
+                                                                                </Grid>
+                                                                                <Grid Margin="0,0,0,8">
+                                                                                        <StackPanel>
+                                                                                                <Label Content="滤波算法"/>
+                                                                                                <ComboBox x:Name="FilterAlgorithmComboBox">
+                                                                                                        <ComboBoxItem Content="平均值"/>
+                                                                                                        <ComboBoxItem Content="中值"/>
+                                                                                                        <ComboBoxItem Content="去极值平均"/>
+                                                                                                </ComboBox>
+                                                                                        </StackPanel>
+                                                                                        <Grid Margin="0,0,0,8">
+                                                                                                <Grid.ColumnDefinitions>
+                                                                                                        <ColumnDefinition Width="*"/>
+                                                                                                        <ColumnDefinition Width="*"/>
+                                                                                                        <ColumnDefinition Width="*"/>
+                                                                                                </Grid.ColumnDefinitions>
+                                                                                                <StackPanel Grid.Column="0"
+                                                                                                                Margin="0,0,10,0">
+                                                                                                        <Label Content="CH2 模式"/>
+                                                                                                        <ComboBox x:Name="Channel2ModeComboBox">
+                                                                                                                <ComboBoxItem Content="关闭"
+                                                                                                                                Tag="Off"
+                                                                                                                                IsSelected="True"/>
+                                                                                                                <ComboBoxItem Content="辅助扫描"
+                                                                                                                                Tag="AuxScan"/>
+                                                                                                                <ComboBoxItem Content="辅助滤波"
+                                                                                                                                Tag="AuxFilter"/>
+                                                                                                        </ComboBox>
+                                                                                                        <Grid Margin="0,6,0,0">
+                                                                                                                <Grid.ColumnDefinitions>
+                                                                                                                        <ColumnDefinition Width="*"/>
+                                                                                                                        <ColumnDefinition Width="*"/>
+                                                                                                                </Grid.ColumnDefinitions>
+                                                                                                                <StackPanel Grid.Column="0"
+                                                                                                                                Margin="0,0,6,0">
+                                                                                                                        <Label Content="CH2 X 增量"/>
+                                                                                                                        <TextBox x:Name="Channel2OffsetXTextBox"
+                                                                                                                                        Text="1"/>
+                                                                                                                </StackPanel>
+                                                                                                                <StackPanel Grid.Column="1">
+                                                                                                                        <Label Content="CH2 Y 增量"/>
+                                                                                                                        <TextBox x:Name="Channel2OffsetYTextBox"
+                                                                                                                                        Text="0"/>
+                                                                                                                </StackPanel>
+                                                                                                        </Grid>
+                                                                                                </StackPanel>
+                                                                                                <StackPanel Grid.Column="1"
+                                                                                                                Margin="0,0,10,0">
+                                                                                                        <Label Content="CH3 模式"/>
+                                                                                                        <ComboBox x:Name="Channel3ModeComboBox">
+                                                                                                                <ComboBoxItem Content="关闭"
+                                                                                                                                Tag="Off"
+                                                                                                                                IsSelected="True"/>
+                                                                                                                <ComboBoxItem Content="辅助扫描"
+                                                                                                                                Tag="AuxScan"/>
+                                                                                                                <ComboBoxItem Content="辅助滤波"
+                                                                                                                                Tag="AuxFilter"/>
+                                                                                                        </ComboBox>
+                                                                                                        <Grid Margin="0,6,0,0">
+                                                                                                                <Grid.ColumnDefinitions>
+                                                                                                                        <ColumnDefinition Width="*"/>
+                                                                                                                        <ColumnDefinition Width="*"/>
+                                                                                                                </Grid.ColumnDefinitions>
+                                                                                                                <StackPanel Grid.Column="0"
+                                                                                                                                Margin="0,0,6,0">
+                                                                                                                        <Label Content="CH3 X 增量"/>
+                                                                                                                        <TextBox x:Name="Channel3OffsetXTextBox"
+                                                                                                                                        Text="2"/>
+                                                                                                                </StackPanel>
+                                                                                                                <StackPanel Grid.Column="1">
+                                                                                                                        <Label Content="CH3 Y 增量"/>
+                                                                                                                        <TextBox x:Name="Channel3OffsetYTextBox"
+                                                                                                                                        Text="0"/>
+                                                                                                                </StackPanel>
+                                                                                                        </Grid>
+                                                                                                </StackPanel>
+                                                                                                <StackPanel Grid.Column="2">
+                                                                                                        <Label Content="CH4 模式"/>
+                                                                                                        <ComboBox x:Name="Channel4ModeComboBox">
+                                                                                                                <ComboBoxItem Content="关闭"
+                                                                                                                                Tag="Off"
+                                                                                                                                IsSelected="True"/>
+                                                                                                                <ComboBoxItem Content="辅助扫描"
+                                                                                                                                Tag="AuxScan"/>
+                                                                                                                <ComboBoxItem Content="辅助滤波"
+                                                                                                                                Tag="AuxFilter"/>
+                                                                                                        </ComboBox>
+                                                                                                        <Grid Margin="0,6,0,0">
+                                                                                                                <Grid.ColumnDefinitions>
+                                                                                                                        <ColumnDefinition Width="*"/>
+                                                                                                                        <ColumnDefinition Width="*"/>
+                                                                                                                </Grid.ColumnDefinitions>
+                                                                                                                <StackPanel Grid.Column="0"
+                                                                                                                                Margin="0,0,6,0">
+                                                                                                                        <Label Content="CH4 X 增量"/>
+                                                                                                                        <TextBox x:Name="Channel4OffsetXTextBox"
+                                                                                                                                        Text="3"/>
+                                                                                                                </StackPanel>
+                                                                                                                <StackPanel Grid.Column="1">
+                                                                                                                        <Label Content="CH4 Y 增量"/>
+                                                                                                                        <TextBox x:Name="Channel4OffsetYTextBox"
+                                                                                                                                        Text="0"/>
+                                                                                                                </StackPanel>
+                                                                                                        </Grid>
+                                                                                                </StackPanel>
+                                                                                        </Grid>
+                                                                                </Grid>
+                                                                                <WrapPanel>
+                                                                                        <Button Style="{StaticResource AccentButtonStyle}"
+                                                                                                        Click="StartScanButton_Click"
+                                                                                                        Content="开始扫描"/>
+                                                                                        <Button Style="{StaticResource DangerButtonStyle}"
+                                                                                                        Click="StopScanButton_Click"
+                                                                                                        Content="停止扫描"/>
+                                                                                        <Button Style="{StaticResource ActionButtonStyle}"
+                                                                                                        Click="ResumeScanButton_Click"
+                                                                                                        Content="继续扫描"/>
+                                                                                        <Button Style="{StaticResource ActionButtonStyle}"
+                                                                                                        Click="ReturnToOriginButton_Click"
+                                                                                                        Content="返回原点"/>
+                                                                                        <Button Style="{StaticResource ActionButtonStyle}"
+                                                                                                        Click="SaveCsvButton_Click"
+                                                                                                        Content="导出 CSV"/>
+                                                                                </WrapPanel>
+                                                                        </StackPanel>
+                                                                </Border>
+
+                                                                <Border Style="{StaticResource CardBorderStyle}"
+                                                                                Margin="0,0,0,16">
+                                                                        <StackPanel>
+                                                                                <TextBlock Style="{StaticResource SectionTitleStyle}"
+                                                                                                Text="预设参数"/>
+                                                                                <TextBlock Margin="0,0,0,12"
+                                                                                           Foreground="{StaticResource MutedTextBrush}"
+                                                                                           Text="保存和复用常用扫描参数组合"
+                                                                                           TextWrapping="Wrap"/>
+                                                                                <Label Content="预设名称"/>
+                                                                                <TextBox x:Name="PresetNameTextBox"
+                                                                                                Text="默认参数组"/>
+                                                                                <Label Content="已保存参数组"/>
+                                                                                <ComboBox x:Name="PresetComboBox"
+                                                                                          DisplayMemberPath="Name"/>
+                                                                                <WrapPanel>
+                                                                                        <Button Style="{StaticResource ActionButtonStyle}"
+                                                                                                Click="SavePresetButton_Click"
+                                                                                                Content="保存参数组"/>
+                                                                                        <Button Style="{StaticResource ActionButtonStyle}"
+                                                                                                Click="LoadPresetButton_Click"
+                                                                                                Content="加载预设"/>
+                                                                                        <Button Style="{StaticResource AccentButtonStyle}"
+                                                                                                Click="UsePresetScanButton_Click"
+                                                                                                Content="使用预设扫描"/>
+                                                                                        <Button Style="{StaticResource DangerButtonStyle}"
+                                                                                                Click="DeletePresetButton_Click"
+                                                                                                Content="删除参数组"/>
+                                                                                </WrapPanel>
+                                                                        </StackPanel>
+                                                                </Border>
+                                                        </StackPanel>
+                                                </Grid>
+                                        </ScrollViewer>
+                                </Grid>
+
+                                <Grid x:Name="MonitorPage"
+                                                Visibility="Collapsed">
+                                        <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="*"/>
+                                        </Grid.RowDefinitions>
+
+                                        <Grid Margin="0,0,0,16">
+                                                <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="12"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="12"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+
+                                                <Border Grid.Column="0"
+                                                        Style="{StaticResource CardBorderStyle}"
+                                                        Background="{StaticResource PanelAltBrush}"
+                                                        MinHeight="102">
+                                                        <StackPanel>
+                                                                <TextBlock Foreground="{StaticResource MutedTextBrush}"
+                                                                                Text="扫描进度"/>
+                                                                <TextBlock x:Name="ProgressTextBlock"
+                                                                           Margin="0,8,0,0"
+                                                                           FontFamily="Bahnschrift SemiBold"
+                                                                           FontSize="24"
+                                                                           Text="0 / 0"/>
+                                                        </StackPanel>
+                                                </Border>
+
+                                                <Border Grid.Column="2"
+                                                        Style="{StaticResource CardBorderStyle}"
+                                                        MinHeight="102">
+                                                        <StackPanel>
+                                                                <TextBlock Foreground="{StaticResource MutedTextBrush}"
+                                                                                Text="最近电压"/>
+                                                                <TextBlock x:Name="LastVoltageTextBlock"
+                                                                           Margin="0,8,0,0"
+                                                                           FontFamily="Bahnschrift SemiBold"
+                                                                           FontSize="24"
+                                                                           Text="-- V"/>
+                                                        </StackPanel>
+                                                </Border>
+
+                                                <Border Grid.Column="4"
+                                                        Style="{StaticResource CardBorderStyle}"
+                                                        MinHeight="102">
+                                                        <StackPanel>
+                                                                <TextBlock Foreground="{StaticResource MutedTextBrush}"
+                                                                                Text="当前位置"/>
+                                                                <TextBlock x:Name="LastPointTextBlock"
+                                                                           Margin="0,8,0,0"
+                                                                           FontFamily="Bahnschrift SemiBold"
+                                                                           FontSize="24"
+                                                                           Text="(0, 0)"/>
+                                                        </StackPanel>
+                                                </Border>
+                                        </Grid>
+
+                                        <Grid Grid.Row="1">
+                                                <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="1.15*"/>
+                                                        <ColumnDefinition Width="18"/>
+                                                        <ColumnDefinition Width="1*"/>
+                                                </Grid.ColumnDefinitions>
+
+                                                <Border Grid.Column="0"
+                                                                Style="{StaticResource CardBorderStyle}">
+                                                        <Grid>
+                                                                <Grid.RowDefinitions>
+                                                                        <RowDefinition Height="Auto"/>
+                                                                        <RowDefinition Height="Auto"/>
+                                                                        <RowDefinition Height="*"/>
+                                                                </Grid.RowDefinitions>
+                                                                <Grid>
+                                                                        <Grid.ColumnDefinitions>
+                                                                                <ColumnDefinition Width="*"/>
+                                                                                <ColumnDefinition Width="Auto"/>
+                                                                        </Grid.ColumnDefinitions>
+                                                                        <TextBlock Style="{StaticResource SectionTitleStyle}"
+                                                                                        Text="扫描热力图"/>
+                                                                        <TextBlock Grid.Column="1"
+                                                                                   VerticalAlignment="Center"
+                                                                                   Foreground="{StaticResource MutedTextBrush}"
+                                                                                   Text="电势分布热力图"/>
+                                                                </Grid>
+                                                                <ScottPlot:WpfPlot x:Name="HeatmapPlot"
+                                                                                Grid.Row="1"/>
+                                                        </Grid>
+                                                </Border>
+
+                                                <Grid Grid.Column="2">
+                                                        <Grid.RowDefinitions>
+                                                                <RowDefinition Height="Auto"/>
+                                                                <RowDefinition Height="*"/>
+                                                        </Grid.RowDefinitions>
+
+                                                        <Border Style="{StaticResource CardBorderStyle}"
+                                                                        Margin="0,0,0,16">
+                                                                <Grid>
+                                                                        <Grid.ColumnDefinitions>
+                                                                                <ColumnDefinition Width="*"/>
+                                                                                <ColumnDefinition Width="*"/>
+                                                                                <ColumnDefinition Width="*"/>
+                                                                                <ColumnDefinition Width="*"/>
+                                                                                <ColumnDefinition Width="*"/>
+                                                                        </Grid.ColumnDefinitions>
+                                                                        <Button Grid.Column="0"
+                                                                                Style="{StaticResource AccentButtonStyle}"
+                                                                                Click="StartScanButton_Click"
+                                                                                Content="开始扫描"/>
+                                                                        <Button Grid.Column="1"
+                                                                                Style="{StaticResource DangerButtonStyle}"
+                                                                                Click="StopScanButton_Click"
+                                                                                Content="停止扫描"/>
+                                                                        <Button Grid.Column="2"
+                                                                                Style="{StaticResource ActionButtonStyle}"
+                                                                                Click="ResumeScanButton_Click"
+                                                                                Content="继续扫描"/>
+                                                                        <Button Grid.Column="3"
+                                                                                Style="{StaticResource ActionButtonStyle}"
+                                                                                Click="SaveCsvButton_Click"
+                                                                                Content="导出 CSV"/>
+                                                                        <Button Grid.Column="4"
+                                                                                Style="{StaticResource ActionButtonStyle}"
+                                                                                Click="ReturnToOriginButton_Click"
+                                                                                Content="返回原点"/>
+                                                                </Grid>
+                                                        </Border>
+
+                                                        <Border Grid.Row="1"
+                                                                        Style="{StaticResource CardBorderStyle}">
+                                                                <Grid>
+                                                                        <Grid.RowDefinitions>
+                                                                                <RowDefinition Height="Auto"/>
+                                                                                <RowDefinition Height="*"/>
+                                                                                <RowDefinition Height="Auto"/>
+                                                                        </Grid.RowDefinitions>
+                                                                        <Grid>
+                                                                                <Grid.ColumnDefinitions>
+                                                                                        <ColumnDefinition Width="*"/>
+                                                                                        <ColumnDefinition Width="Auto"/>
+                                                                                </Grid.ColumnDefinitions>
+                                                                                <TextBlock Style="{StaticResource SectionTitleStyle}"
+                                                                                                Text="三维视图"/>
+                                                                                <TextBlock Grid.Column="1"
+                                                                                           VerticalAlignment="Center"
+                                                                                           Foreground="{StaticResource MutedTextBrush}"
+                                                                                           Text="显示扫描点的三维空间电压分布"/>
+                                                                        </Grid>
+
+                                                                        <Border Grid.Row="1"
+                                                                                Margin="0,14,0,14"
+                                                                                Background="#101720"
+                                                                                BorderBrush="#2A3C4B"
+                                                                                BorderThickness="1"
+                                                                                CornerRadius="6">
+                                                                                <h:HelixViewport3D x:Name="SurfaceViewport"
+                                                                                                   Background="#101720"
+                                                                                                   ShowCoordinateSystem="True"
+                                                                                                   ShowViewCube="True"
+                                                                                                   ZoomExtentsWhenLoaded="False"
+                                                                                                   RotateAroundMouseDownPoint="True"/>
+                                                                        </Border>
+
+                                                                        <Grid Grid.Row="2">
+                                                                                <Grid.ColumnDefinitions>
+                                                                                        <ColumnDefinition Width="*"/>
+                                                                                        <ColumnDefinition Width="Auto"/>
+                                                                                </Grid.ColumnDefinitions>
+                                                                                <StackPanel Grid.Column="0">
+                                                                                        <TextBlock Foreground="{StaticResource MutedTextBrush}"
+                                                                                                        Text="高度缩放"/>
+                                                                                        <Slider x:Name="HeightScaleSlider"
+                                                                                                Minimum="0.5"
+                                                                                                Maximum="3"
+                                                                                                Value="1.2"
+                                                                                                ValueChanged="SurfaceControl_ValueChanged"/>
+                                                                                </StackPanel>
+                                                                                <TextBlock Grid.Column="1"
+                                                                                           Margin="18,0,0,0"
+                                                                                           VerticalAlignment="Center"
+                                                                                           Foreground="{StaticResource MutedTextBrush}"
+                                                                                           Text="鼠标左键旋转 · 滚轮缩放 · 右键平移"/>
+                                                                        </Grid>
+                                                                </Grid>
+                                                        </Border>
+                                                </Grid>
+                                        </Grid>
+                                </Grid>
+
+                                <Grid x:Name="DataPage"
+                                                Visibility="Collapsed">
+                                        <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="*"/>
+                                        </Grid.RowDefinitions>
+
+                                        <Border Style="{StaticResource CardBorderStyle}"
+                                                        Margin="0,0,0,16">
+                                                <Grid>
+                                                        <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="*"/>
+                                                                <ColumnDefinition Width="Auto"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <StackPanel>
+                                                                <TextBlock Style="{StaticResource SectionTitleStyle}"
+                                                                                Text="数据与日志"/>
+                                                                <TextBlock Foreground="{StaticResource MutedTextBrush}"
+                                                                                Text="查看扫描过程中的串口通信记录与系统日志。"/>
+                                                        </StackPanel>
+                                                        <Button Grid.Column="1"
+                                                                Style="{StaticResource ActionButtonStyle}"
+                                                                Click="SaveCsvButton_Click"
+                                                                Content="导出 CSV"/>
+                                                </Grid>
+                                        </Border>
+
+                                        <Grid Grid.Row="1">
+                                                <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="1.08*"/>
+                                                        <ColumnDefinition Width="18"/>
+                                                        <ColumnDefinition Width="1*"/>
+                                                </Grid.ColumnDefinitions>
+
+                                                <Border Grid.Column="0"
+                                                                Style="{StaticResource CardBorderStyle}">
+                                                        <Grid>
+                                                                <Grid.RowDefinitions>
+                                                                        <RowDefinition Height="Auto"/>
+                                                                        <RowDefinition Height="Auto"/>
+                                                                        <RowDefinition Height="*"/>
+                                                                </Grid.RowDefinitions>
+                                                                <Grid>
+                                                                        <Grid.ColumnDefinitions>
+                                                                                <ColumnDefinition Width="*"/>
+                                                                                <ColumnDefinition Width="Auto"/>
+                                                                        </Grid.ColumnDefinitions>
+                                                                        <TextBlock Style="{StaticResource SectionTitleStyle}"
+                                                                                        Text="串口日志"/>
+                                                                        <Button Grid.Column="1"
+                                                                                Width="72"
+                                                                                Height="32"
+                                                                                Style="{StaticResource ActionButtonStyle}"
+                                                                                Click="ClearLogButton_Click"
+                                                                                Content="清空日志"/>
+                                                                </Grid>
+                                                                <Grid Grid.Row="1"
+                                                                                Margin="0,0,0,10">
+                                                                        <Grid.ColumnDefinitions>
+                                                                                <ColumnDefinition Width="Auto"/>
+                                                                                <ColumnDefinition Width="Auto"/>
+                                                                                <ColumnDefinition Width="Auto"/>
+                                                                        </Grid.ColumnDefinitions>
+                                                                        <ComboBox x:Name="SendTargetComboBox"
+                                                                                  Width="112"
+                                                                                  Margin="0,0,10,0"
+                                                                                  SelectedIndex="0">
+                                                                                <ComboBoxItem Content="控制串口"/>
+                                                                                <ComboBoxItem Content="传感串口"/>
+                                                                        </ComboBox>
+                                                                        <TextBox x:Name="LogCommandTextBox"
+                                                                                 Grid.Column="1"
+                                                                                 Width="280"
+                                                                                 Margin="0,0,10,0"
+                                                                                 Text="$J=G90 X0 Y0 F500"/>
+                                                                        <Button Grid.Column="2"
+                                                                                Width="72"
+                                                                                Height="40"
+                                                                                Style="{StaticResource ActionButtonStyle}"
+                                                                                Click="SendLogCommandButton_Click"
+                                                                                Content="发送"/>
+                                                                </Grid>
+                                                                <TextBox x:Name="LogTextBox"
+                                                                         Grid.Row="2"
+                                                                         Margin="0"
+                                                                         Padding="12"
+                                                                         Background="#101720"
+                                                                         BorderBrush="#101720"
+                                                                         AcceptsReturn="True"
+                                                                         IsReadOnly="True"
+                                                                         VerticalScrollBarVisibility="Auto"
+                                                                         TextWrapping="Wrap"/>
+                                                        </Grid>
+                                                </Border>
+
+                                                <Border Grid.Column="2"
+                                                                Style="{StaticResource CardBorderStyle}">
+                                                        <Grid>
+                                                                <Grid.RowDefinitions>
+                                                                        <RowDefinition Height="Auto"/>
+                                                                        <RowDefinition Height="*"/>
+                                                                </Grid.RowDefinitions>
+                                                                <TextBlock Style="{StaticResource SectionTitleStyle}"
+                                                                                Text="点位数据"/>
+                                                                <DataGrid x:Name="PointsDataGrid"
+                                                                          Grid.Row="1"
+                                                                          AutoGenerateColumns="False"
+                                                                          CanUserAddRows="False"
+                                                                          IsReadOnly="True"
+                                                                          BorderThickness="0">
+                                                                        <DataGrid.Columns>
+                                                                                <DataGridTextColumn Header="序号"
+                                                                                                Binding="{Binding Order}"
+                                                                                                Width="80"/>
+                                                                                <DataGridTextColumn Header="X"
+                                                                                                Binding="{Binding X, StringFormat=F2}"
+                                                                                                Width="*"/>
+                                                                                <DataGridTextColumn Header="Y"
+                                                                                                Binding="{Binding Y, StringFormat=F2}"
+                                                                                                Width="*"/>
+                                                                                <DataGridTextColumn Header="电压"
+                                                                                                Binding="{Binding VoltageDisplay}"
+                                                                                                Width="*"/>
+                                                                        </DataGrid.Columns>
+                                                                </DataGrid>
+                                                        </Grid>
+                                                </Border>
+                                        </Grid>
+                                </Grid>
+                        </Grid>
                 </Grid>
-            </Grid>
         </Grid>
-    </Grid>
 </Window>
+
