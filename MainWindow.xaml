@@ -1056,7 +1056,7 @@
                                                                                    Text="电势分布热力图"/>
                                                                 </Grid>
                                                                 <ScottPlot:WpfPlot x:Name="HeatmapPlot"
-                                                                                Grid.Row="1"/>
+                                                                                Grid.Row="2"/>
                                                         </Grid>
                                                 </Border>
 
