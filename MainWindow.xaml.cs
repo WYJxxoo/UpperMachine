@@ -32,6 +32,9 @@ public partial class MainWindow : Window
     private SerialPort? _dataPort;
     private ScanPlanInfo? _scanPlan;
     private double[,]? _heatmapData;
+    private DateTime _scanStartTime = DateTime.MinValue;
+    private int _scanRunStartCompleted;
+    private int _scanCompletedCount;
     private DateTime _lastPlotRefresh = DateTime.MinValue;
     private DateTime _lastGridScroll = DateTime.MinValue;
     private DateTime _lastSurfaceRebuild = DateTime.MinValue;
@@ -534,6 +537,10 @@ public partial class MainWindow : Window
         }
 
         ProgressTextBlock.Text = $"0 / {_pointRows.Count}";
+        _scanStartTime = DateTime.Now;
+        _scanRunStartCompleted = 0;
+        _scanCompletedCount = 0;
+        ProgressTimingTextBlock.Text = "运行 00:00:00 · 均速 0.00 点/s · 剩余 --:--:--";
         LastVoltageTextBlock.Text = "-- V";
         LastPointTextBlock.Text = "(0.00, 0.00)";
         ResetSurface();
@@ -565,6 +572,8 @@ public partial class MainWindow : Window
         }
 
         ProgressTextBlock.Text = $"{args.Index + 1} / {_pointRows.Count}";
+        _scanCompletedCount = args.Index + 1;
+        UpdateProgressTiming();
         LastVoltageTextBlock.Text = args.Point.Voltage >= 0 ? $"{args.Point.Voltage:F4} V" : "-- V";
         LastPointTextBlock.Text = $"({args.Point.X:F2}, {args.Point.Y:F2})";
 
@@ -575,6 +584,28 @@ public partial class MainWindow : Window
         }
 
         RenderVisuals(force: false);
+    }
+
+    private void UpdateProgressTiming()
+    {
+        int completed = _scanCompletedCount;
+        int total = _pointRows.Count;
+        double elapsedSeconds = Math.Max(0, (DateTime.Now - _scanStartTime).TotalSeconds);
+        int measuredThisRun = Math.Max(0, completed - _scanRunStartCompleted);
+        double pointsPerSecond = elapsedSeconds > 0 ? measuredThisRun / elapsedSeconds : 0;
+        int remainingPoints = Math.Max(0, total - completed);
+
+        string remainingText = pointsPerSecond > 0
+            ? FormatDuration(remainingPoints / pointsPerSecond)
+            : "--:--:--";
+
+        ProgressTimingTextBlock.Text =
+            $"运行 {FormatDuration(elapsedSeconds)} · 均速 {pointsPerSecond:F2} 点/s · 剩余 {remainingText}";
+    }
+
+    private static string FormatDuration(double seconds)
+    {
+        return TimeSpan.FromSeconds(Math.Max(0, seconds)).ToString(@"hh\:mm\:ss");
     }
 
     private void RenderVisuals(bool force)
@@ -1435,6 +1466,8 @@ private void LoadPresetList(string? selectPresetName = null)
                 _scanController.FilterAlgorithm = _lastScanParameter.FilterAlgorithm;
             }
 
+            _scanStartTime = DateTime.Now;
+            _scanRunStartCompleted = _scanCompletedCount;
             _scanController.ResumeScan();
             NavigationListBox.SelectedIndex = 1;
             AppendLog("已从断点继续扫描。");

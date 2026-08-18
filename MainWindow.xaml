@@ -1001,6 +1001,11 @@
                                                                            FontFamily="Bahnschrift SemiBold"
                                                                            FontSize="24"
                                                                            Text="0 / 0"/>
+                                                                <TextBlock x:Name="ProgressTimingTextBlock"
+                                                                           Margin="0,8,0,0"
+                                                                           Foreground="{StaticResource MutedTextBrush}"
+                                                                           FontSize="13"
+                                                                           Text="运行 00:00:00 · 均速 0.00 点/s · 剩余 --:--:--"/>
                                                         </StackPanel>
                                                 </Border>
 
