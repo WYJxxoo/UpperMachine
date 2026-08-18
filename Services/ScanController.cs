@@ -112,6 +112,9 @@ public sealed class ScanController : IDisposable
     private const int MultiMeasureTimes = 5;
     private const int ScanRetryTimes = 2;
     private const int SingleMeasureTimeoutMs = 400;
+    private const int AuxChannel2OrderOffset = 1002;
+    private const int AuxChannel3OrderOffset = 2003;
+    private const int AuxChannel4OrderOffset = 3004;
 
     public ScanController()
     {
@@ -318,19 +321,25 @@ public sealed class ScanController : IDisposable
         string fileName = $"ScanData_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
         string fullPath = Path.Combine(saveDir, fileName);
 
-        using StreamWriter writer = new(fullPath, false, Encoding.UTF8);
-        writer.WriteLine("Order,X,Y,Voltage");
+        // 辅助扫描开启时，每个辅助通道会在偏移位置产生额外测点；
+        // 导出时需把这些测点一并写入，保证保存点数与扫描覆盖的全部点位一致。
+        ScanParameter parameter = _scanParameter ?? new ScanParameter();
+        List<(PointData Point, int Channel)> points = EnumerateAuxiliaryPoints(_dataArray, parameter).ToList();
 
-        foreach (PointData point in _dataArray)
+        using StreamWriter writer = new(fullPath, false, Encoding.UTF8);
+        writer.WriteLine("Order,Channel,X,Y,Voltage");
+
+        foreach ((PointData point, int channel) in points)
         {
             writer.WriteLine(
                 $"{point.Order}," +
+                $"{channel}," +
                 $"{point.X.ToString("F2", CultureInfo.InvariantCulture)}," +
                 $"{point.Y.ToString("F2", CultureInfo.InvariantCulture)}," +
                 $"{point.Voltage.ToString("F4", CultureInfo.InvariantCulture)}");
         }
 
-        Log($"[保存] {fullPath}");
+        Log($"[保存] {fullPath}（共 {points.Count} 点）");
         return fullPath;
     }
 
@@ -985,40 +994,44 @@ public sealed class ScanController : IDisposable
     
     public static IEnumerable<PointData> BuildAuxiliaryPoints(IEnumerable<PointData> points, ScanParameter parameter)
     {
+        IReadOnlyList<PointData> pointList = points as IReadOnlyList<PointData> ?? points.ToArray();
+        return EnumerateAuxiliaryPoints(pointList, parameter).Select(entry => entry.Point);
+    }
+
+    private static IEnumerable<(PointData Point, int Channel)> EnumerateAuxiliaryPoints(
+        IReadOnlyList<PointData> points,
+        ScanParameter parameter)
+    {
         foreach (PointData point in points)
         {
-            yield return point;
+            yield return (point, 1);
 
-            if (string.Equals(parameter.Channel2Mode, ScanParameter.ChannelModeAuxScan, StringComparison.OrdinalIgnoreCase) && IsValidVoltage(point.Channel2Voltage))
+            if (IsAuxScanMode(parameter.Channel2Mode) && IsValidVoltage(point.Channel2Voltage))
             {
-                yield return CreateAuxiliaryPoint(
-                    point,
-                    parameter.Channel2OffsetX,
-                    parameter.Channel2OffsetY,
-                    point.Channel2Voltage,
-                    1002);
+                yield return (
+                    CreateAuxiliaryPoint(point, parameter.Channel2OffsetX, parameter.Channel2OffsetY, point.Channel2Voltage, AuxChannel2OrderOffset),
+                    2);
             }
 
-            if (string.Equals(parameter.Channel3Mode, ScanParameter.ChannelModeAuxScan, StringComparison.OrdinalIgnoreCase) && IsValidVoltage(point.Channel3Voltage))
+            if (IsAuxScanMode(parameter.Channel3Mode) && IsValidVoltage(point.Channel3Voltage))
             {
-                yield return CreateAuxiliaryPoint(
-                    point,
-                    parameter.Channel3OffsetX,
-                    parameter.Channel3OffsetY,
-                    point.Channel3Voltage,
-                    2003);
+                yield return (
+                    CreateAuxiliaryPoint(point, parameter.Channel3OffsetX, parameter.Channel3OffsetY, point.Channel3Voltage, AuxChannel3OrderOffset),
+                    3);
             }
 
-            if (string.Equals(parameter.Channel4Mode, ScanParameter.ChannelModeAuxScan, StringComparison.OrdinalIgnoreCase) && IsValidVoltage(point.Channel4Voltage))
+            if (IsAuxScanMode(parameter.Channel4Mode) && IsValidVoltage(point.Channel4Voltage))
             {
-                yield return CreateAuxiliaryPoint(
-                    point,
-                    parameter.Channel4OffsetX,
-                    parameter.Channel4OffsetY,
-                    point.Channel4Voltage,
-                    3004);
+                yield return (
+                    CreateAuxiliaryPoint(point, parameter.Channel4OffsetX, parameter.Channel4OffsetY, point.Channel4Voltage, AuxChannel4OrderOffset),
+                    4);
             }
         }
+    }
+
+    private static bool IsAuxScanMode(string? mode)
+    {
+        return string.Equals(mode, ScanParameter.ChannelModeAuxScan, StringComparison.OrdinalIgnoreCase);
     }
 
     private static PointData CreateAuxiliaryPoint(PointData point, double offsetX, double offsetY, double voltage, int orderOffset)
