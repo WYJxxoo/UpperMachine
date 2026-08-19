@@ -498,7 +498,7 @@
                         Padding="0"
                         Background="{StaticResource SidebarBrush}"
                         BorderThickness="0">
-                        <Grid Margin="18,24,16,18">
+                        <Grid Margin="18,24,16,18" ClipToBounds="True">
                                 <Grid.RowDefinitions>
                                         <RowDefinition Height="Auto"/>
                                         <RowDefinition Height="*"/>
@@ -515,7 +515,9 @@
                                         <TextBlock Margin="0,4,0,0"
                                                    Foreground="#71838B"
                                                    FontSize="11"
-                                                   Text="SERIAL CONTROL  /  SCANNING WORKSPACE"/>
+                                                   Text="SERIAL CONTROL  /  SCANNING WORKSPACE"
+                                                   TextWrapping="Wrap"
+                                                   TextTrimming="CharacterEllipsis"/>
                                 </StackPanel>
 
                                 <Border Grid.Row="2"
@@ -582,7 +584,8 @@
                 </Border>
 
                 <Grid Grid.Column="1"
-                                Margin="0">
+                                Margin="0"
+                                ClipToBounds="True">
                         <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="*"/>
@@ -699,10 +702,10 @@
                                                                                                 Text="控制与指令"/>
                                                                                 <Label Content="抬笔命令"/>
                                                                                 <TextBox x:Name="RaiseCommandTextBox"
-                                                                                                Text="$J=G91 Z-10 F1500"/>
+                                                                                                Text="$J=G91 Z-10 F5000"/>
                                                                                 <Label Content="落笔命令"/>
                                                                                 <TextBox x:Name="DropCommandTextBox"
-                                                                                                Text="$J=G91 Z10 F500"/>
+                                                                                                Text="$J=G91 Z10 F5000"/>
                                                                                 <Label Content="保持命令"/>
                                                                                 <TextBox x:Name="HoldCommandTextBox"
                                                                                                 Text="$J=G90 Z0.0 F500"/>

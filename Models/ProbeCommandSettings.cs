@@ -2,9 +2,9 @@ namespace UpperMachine.Models;
 
 public sealed class ProbeCommandSettings
 {
-    public string RaiseCommand { get; set; } = "$J=G91 Z-10 F1500";
+    public string RaiseCommand { get; set; } = "$J=G91 Z-10 F5000";
 
-    public string DropCommand { get; set; } = "$J=G91 Z10 F500";
+    public string DropCommand { get; set; } = "$J=G91 Z10 F5000";
 
     public string HoldCommand { get; set; } = "$J=G90 Z0.0 F500";
 

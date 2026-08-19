@@ -155,7 +155,7 @@
                 BorderBrush="{StaticResource BorderBrushStrong}"
                 BorderThickness="1"
                 CornerRadius="6">
-            <Grid>
+            <Grid ClipToBounds="True">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />

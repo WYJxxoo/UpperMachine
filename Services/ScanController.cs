@@ -643,7 +643,7 @@ public sealed class ScanController : IDisposable
             $"Y{point.Y.ToString(CultureInfo.InvariantCulture)} " +
             $"F{scanParameter.Speed.ToString(CultureInfo.InvariantCulture)}";
         SendCode(controlPort, command, "控制");
-        await Task.Delay(800, ct);
+        await Task.Delay(250, ct);
     }
 
     private async Task Scan(int presentPosition, SerialPort dataPort, CancellationToken ct)
@@ -919,7 +919,6 @@ public sealed class ScanController : IDisposable
                     }
                     else
                     {
-                        await Task.Delay(200, ct);
                         _workState = WorkState.Drop;
                     }
                     break;
@@ -929,7 +928,7 @@ public sealed class ScanController : IDisposable
                     {
                         SendCode(controlPort, DropCommand, "控制");
                         _penRaised = false;
-                        await Task.Delay(100, ct);
+                        await Task.Delay(50, ct);
                     }
 
                     GrblState dropState = await IsRunState(ct);
