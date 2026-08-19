@@ -27,6 +27,7 @@ public partial class MainWindow : Window
     private readonly Model3DGroup _surfaceScene = new();
     private readonly Model3DGroup _surfaceDataGroup = new();
     private ProbeControlWindow? _probeControlWindow;
+    private CameraWindow? _cameraWindow;
 
     private SerialPort? _controlPort;
     private SerialPort? _dataPort;
@@ -410,6 +411,22 @@ public partial class MainWindow : Window
         headerGrid.Children.Add(actionPanel);
 
         _analysisButtonAdded = true;
+    }
+
+    private void OpenCameraWindowButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_cameraWindow is null || !_cameraWindow.IsVisible)
+        {
+            _cameraWindow = new CameraWindow
+            {
+                Owner = this,
+            };
+            _cameraWindow.Closed += (_, _) => _cameraWindow = null;
+            _cameraWindow.Show();
+            return;
+        }
+
+        _cameraWindow.Activate();
     }
 
     private void OpenProbeControlWindowButton_Click(object sender, RoutedEventArgs e)

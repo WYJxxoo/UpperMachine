@@ -722,6 +722,10 @@
                                                                                                 Click="SendRawCommandButton_Click"
                                                                                                 Content="发送指令"/>
                                                                                 </Grid>
+                                                                                <Button Style="{StaticResource ActionButtonStyle}"
+                                                                                        Click="OpenCameraWindowButton_Click"
+                                                                                        Content="摄像头监控"
+                                                                                        Margin="0,12,0,12"/>
                                                                                 <Button Style="{StaticResource AccentButtonStyle}"
                                                                                         Click="OpenProbeControlWindowButton_Click"
                                                                                         Content="打开控制面板"/>
