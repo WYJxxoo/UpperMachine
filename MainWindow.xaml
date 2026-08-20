@@ -428,7 +428,9 @@
                             <Trigger Property="Tag" Value="Data">
                                 <Setter TargetName="Glyph" Property="Text" Value="&#xE8A5;" />
                             </Trigger>
-                        </ControlTemplate.Triggers>
+                            <Trigger Property="Tag" Value="Processing">
+                                <Setter TargetName="Glyph" Property="Text" Value="&#xE9D2;" />
+                            </Trigger>                        </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
@@ -568,7 +570,16 @@
                                                                    Text="查看扫描进度、热力图和 3D 视图"/>
                                                 </StackPanel>
                                         </ListBoxItem>
-                                        <ListBoxItem Tag="Data">
+                                        <ListBoxItem Tag="Processing">
+                                                <StackPanel>
+                                                        <TextBlock FontFamily="Bahnschrift SemiBold"
+                                                                        FontSize="16"
+                                                                        Text="数据处理"/>
+                                                        <TextBlock Margin="0,5,0,0"
+                                                                   Foreground="{StaticResource MutedTextBrush}"
+                                                                   Text="导入测量数据并生成空间分析图"/>
+                                                </StackPanel>
+                                        </ListBoxItem>                                        <ListBoxItem Tag="Data">
                                                 <StackPanel>
                                                         <TextBlock FontFamily="Bahnschrift SemiBold"
                                                                         FontSize="16"
@@ -1177,6 +1188,147 @@
                                         </Grid>
                                 </Grid>
 
+                                <Grid x:Name="ProcessingPage"
+                                                Visibility="Collapsed">
+                                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                                <StackPanel>
+                                                        <Border Style="{StaticResource CardBorderStyle}"
+                                                                        Margin="0,0,0,16">
+                                                                <Grid>
+                                                                        <Grid.ColumnDefinitions>
+                                                                                <ColumnDefinition Width="*"/>
+                                                                                <ColumnDefinition Width="Auto"/>
+                                                                        </Grid.ColumnDefinitions>
+                                                                        <StackPanel>
+                                                                                <TextBlock Style="{StaticResource SectionTitleStyle}"
+                                                                                                Text="数据处理"/>
+                                                                                <TextBlock x:Name="ProcessingDataSummaryTextBlock"
+                                                                                           Foreground="{StaticResource MutedTextBrush}"
+                                                                                           Text="使用当前扫描数据；也可导入 CSV 测量数据。"/>
+                                                                        </StackPanel>
+                                                                        <WrapPanel Grid.Column="1"
+                                                                                   HorizontalAlignment="Right">
+                                                                                <Button Style="{StaticResource ActionButtonStyle}"
+                                                                                                Click="ImportMeasurementDataButton_Click"
+                                                                                                Content="导入测量数据"/>
+                                                                                <Button Style="{StaticResource ActionButtonStyle}"
+                                                                                                Click="UseCurrentScanDataButton_Click"
+                                                                                                Content="使用当前扫描"/>
+                                                                                <Button Style="{StaticResource AccentButtonStyle}"
+                                                                                                Click="SaveProcessingImagesButton_Click"
+                                                                                                Content="保存图像"/>
+                                                                        </WrapPanel>
+                                                                </Grid>
+                                                        </Border>
+
+                                                        <Grid Margin="0,0,0,16">
+                                                                <Grid.ColumnDefinitions>
+                                                                        <ColumnDefinition Width="1.04*"/>
+                                                                        <ColumnDefinition Width="16"/>
+                                                                        <ColumnDefinition Width="0.96*"/>
+                                                                </Grid.ColumnDefinitions>
+
+                                                                <Border Grid.Column="0"
+                                                                                Style="{StaticResource CardBorderStyle}"
+                                                                                Height="390">
+                                                                        <Grid>
+                                                                                <Grid.RowDefinitions>
+                                                                                        <RowDefinition Height="Auto"/>
+                                                                                        <RowDefinition Height="*"/>
+                                                                                </Grid.RowDefinitions>
+                                                                                <Grid>
+                                                                                        <Grid.ColumnDefinitions>
+                                                                                                <ColumnDefinition Width="*"/>
+                                                                                                <ColumnDefinition Width="Auto"/>
+                                                                                        </Grid.ColumnDefinitions>
+                                                                                        <TextBlock Style="{StaticResource SectionTitleStyle}"
+                                                                                                        Text="原始热力图"/>
+                                                                                        <TextBlock Grid.Column="1"
+                                                                                                   VerticalAlignment="Center"
+                                                                                                   Foreground="{StaticResource MutedTextBrush}"
+                                                                                                   Text="原始测量电压"/>
+                                                                                </Grid>
+                                                                                <ScottPlot:WpfPlot x:Name="ProcessingRawHeatmapPlot"
+                                                                                                Grid.Row="1"/>
+                                                                        </Grid>
+                                                                </Border>
+
+                                                                <Border Grid.Column="2"
+                                                                                Style="{StaticResource CardBorderStyle}"
+                                                                                Height="390">
+                                                                        <Grid>
+                                                                                <Grid.RowDefinitions>
+                                                                                        <RowDefinition Height="Auto"/>
+                                                                                        <RowDefinition Height="*"/>
+                                                                                        <RowDefinition Height="Auto"/>
+                                                                                </Grid.RowDefinitions>
+                                                                                <Grid>
+                                                                                        <Grid.ColumnDefinitions>
+                                                                                                <ColumnDefinition Width="*"/>
+                                                                                                <ColumnDefinition Width="Auto"/>
+                                                                                        </Grid.ColumnDefinitions>
+                                                                                        <TextBlock Style="{StaticResource SectionTitleStyle}"
+                                                                                                        Text="空间 3D 柱形图"/>
+                                                                                        <TextBlock Grid.Column="1"
+                                                                                                   VerticalAlignment="Center"
+                                                                                                   Foreground="{StaticResource MutedTextBrush}"
+                                                                                                   Text="与扫描预览一致"/>
+                                                                                </Grid>
+                                                                                <Border Grid.Row="1"
+                                                                                                Margin="0,14,0,12"
+                                                                                                Background="#101720"
+                                                                                                BorderBrush="#2A3C4B"
+                                                                                                BorderThickness="1"
+                                                                                                CornerRadius="6">
+                                                                                        <h:HelixViewport3D x:Name="ProcessingSurfaceViewport"
+                                                                                                           Background="#101720"
+                                                                                                           ShowCoordinateSystem="True"
+                                                                                                           ShowViewCube="True"
+                                                                                                           ZoomExtentsWhenLoaded="False"
+                                                                                                           RotateAroundMouseDownPoint="True"/>
+                                                                                </Border>
+                                                                                <Grid Grid.Row="2">
+                                                                                        <Grid.ColumnDefinitions>
+                                                                                                <ColumnDefinition Width="*"/>
+                                                                                                <ColumnDefinition Width="Auto"/>
+                                                                                        </Grid.ColumnDefinitions>
+                                                                                        <Slider x:Name="ProcessingHeightScaleSlider"
+                                                                                                Minimum="0.5"
+                                                                                                Maximum="3"
+                                                                                                Value="1.2"
+                                                                                                ValueChanged="ProcessingSurfaceControl_ValueChanged"/>
+                                                                                        <TextBlock Grid.Column="1"
+                                                                                                   Margin="14,0,0,0"
+                                                                                                   VerticalAlignment="Center"
+                                                                                                   Foreground="{StaticResource MutedTextBrush}"
+                                                                                                   Text="高度缩放"/>
+                                                                                </Grid>
+                                                                        </Grid>
+                                                                </Border>
+                                                        </Grid>
+
+                                                        <Border Style="{StaticResource CardBorderStyle}"
+                                                                        Height="390"
+                                                                        Margin="0,0,0,16">
+                                                                <Grid>
+                                                                        <Grid.RowDefinitions>
+                                                                                <RowDefinition Height="Auto"/>
+                                                                                <RowDefinition Height="Auto"/>
+                                                                                <RowDefinition Height="*"/>
+                                                                        </Grid.RowDefinitions>
+                                                                        <TextBlock Style="{StaticResource SectionTitleStyle}"
+                                                                                        Text="拉普拉斯算子分布图"/>
+                                                                        <TextBlock Grid.Row="1"
+                                                                                   Margin="0,4,0,8"
+                                                                                   Foreground="{StaticResource MutedTextBrush}"
+                                                                                   Text="使用四邻域离散拉普拉斯算子；边界和缺失测点不参与计算。"/>
+                                                                        <ScottPlot:WpfPlot x:Name="ProcessingLaplacianPlot"
+                                                                                        Grid.Row="2"/>
+                                                                </Grid>
+                                                        </Border>
+                                                </StackPanel>
+                                        </ScrollViewer>
+                                </Grid>
                                 <Grid x:Name="DataPage"
                                                 Visibility="Collapsed">
                                         <Grid.RowDefinitions>

@@ -1,10 +1,13 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using System.Globalization;
+using System.IO;
 using System.IO.Ports;
+using Microsoft.Win32;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Windows.Media.Media3D;
 using System.Windows.Threading;
 using UpperMachine.Models;
@@ -15,6 +18,15 @@ namespace UpperMachine;
 
 public partial class MainWindow : Window
 {
+    private sealed class ProcessingGridData
+    {
+        public required double[] XValues { get; init; }
+        public required double[] YValues { get; init; }
+        public required double[,] Values { get; init; }
+
+        public double StepX => XValues.Length > 1 ? Math.Abs(XValues[1] - XValues[0]) : 1;
+        public double StepY => YValues.Length > 1 ? Math.Abs(YValues[1] - YValues[0]) : 1;
+    }
     private const double SurfaceHeightUnit = 8.0;
     private const double SurfaceVoltageMax = 10.0;
     private const int MaxLogLines = 2000;
@@ -26,6 +38,8 @@ public partial class MainWindow : Window
     private readonly ScanPresetStore _presetStore = new();
     private readonly Model3DGroup _surfaceScene = new();
     private readonly Model3DGroup _surfaceDataGroup = new();
+    private readonly Model3DGroup _processingSurfaceScene = new();
+    private readonly Model3DGroup _processingSurfaceDataGroup = new();
     private ProbeControlWindow? _probeControlWindow;
     private CameraWindow? _cameraWindow;
 
@@ -40,6 +54,9 @@ public partial class MainWindow : Window
     private DateTime _lastGridScroll = DateTime.MinValue;
     private DateTime _lastSurfaceRebuild = DateTime.MinValue;
     private ScaleTransform3D? _surfaceHeightScale;
+    private ScaleTransform3D? _processingSurfaceHeightScale;
+    private ProcessingGridData? _processingGrid;
+    private bool _processingUsesCurrentScan = true;
     private ScanParameter? _lastScanParameter;
     private bool _analysisButtonAdded;
     private ScanParameter CurrentRenderParameter => _lastScanParameter ?? ReadScanParameterFromUi();
@@ -52,6 +69,7 @@ public partial class MainWindow : Window
         PointsDataGrid.ItemsSource = _pointRows;
         SourceInitialized += (_, _) => EnsureWindowFitsWorkArea();
         InitializeThreeDScene();
+        InitializeProcessingThreeDScene();
         ConfigureUiDefaults();
         ConfigureControllerEvents();
         EnsureAnalysisEntryPoint();
@@ -73,7 +91,8 @@ public partial class MainWindow : Window
 
         SetNavigationItemText(0, "设备与参数", "连接设备并配置扫描参数");
         SetNavigationItemText(1, "扫描监控与图形", "查看扫描进度、热力图和 3D 视图");
-        SetNavigationItemText(2, "数据与日志", "查看采样点、电压结果和串口日志");
+        SetNavigationItemText(2, "数据处理", "导入测量数据并生成空间分析图");
+        SetNavigationItemText(3, "数据与日志", "查看采样点、电压结果和串口日志");
 
         SetLeadingText(CurrentPageTitleTextBlock, "设备与参数");
         SetTopRightSummary("当前预设参数", "未选择");
@@ -130,6 +149,8 @@ public partial class MainWindow : Window
         SetCardTitle(LastVoltageTextBlock, "当前电压", useLeadingText: true);
         SetCardTitle(LastPointTextBlock, "当前位置", useLeadingText: true);
         SetCardTitle(HeatmapPlot, "扫描热力图");
+        SetCardTitle(ProcessingRawHeatmapPlot, "原始热力图");
+        SetCardTitle(ProcessingLaplacianPlot, "拉普拉斯算子分布图");
         SetCardTitle(SurfaceViewport, "3D 扫描视图");
         SetCardTitle(LogTextBox, "串口日志");
         SetCardTitle(PointsDataGrid, "采样点明细");
@@ -492,6 +513,390 @@ public partial class MainWindow : Window
         SurfaceViewport.Children.Add(sceneVisual);
     }
 
+    private void InitializeProcessingThreeDScene()
+    {
+        _processingSurfaceHeightScale = new ScaleTransform3D(1, ProcessingHeightScaleSlider.Value, 1);
+        _processingSurfaceDataGroup.Transform = _processingSurfaceHeightScale;
+
+        _processingSurfaceScene.Children.Add(new AmbientLight(Color.FromRgb(90, 100, 110)));
+        _processingSurfaceScene.Children.Add(new DirectionalLight(Color.FromRgb(255, 244, 224), new Vector3D(-1, -1.6, -1.2)));
+        _processingSurfaceScene.Children.Add(new DirectionalLight(Color.FromRgb(120, 186, 255), new Vector3D(1, -0.7, 0.3)));
+        _processingSurfaceScene.Children.Add(_processingSurfaceDataGroup);
+
+        ProcessingSurfaceViewport.Children.Clear();
+        ProcessingSurfaceViewport.Children.Add(new ModelVisual3D
+        {
+            Content = _processingSurfaceScene,
+        });
+    }
+
+    private void RenderProcessingVisuals()
+    {
+        RenderProcessingCharts();
+        RebuildProcessingSurface();
+        ProcessingSurfaceViewport.ZoomExtents(0);
+    }
+
+    private void RenderProcessingCharts()
+    {
+        RenderProcessingHeatmap(ProcessingRawHeatmapPlot, _processingGrid?.Values, _processingGrid, "原始测量电压");
+        double[,]? laplacian = BuildLaplacianGrid(_processingGrid);
+        RenderProcessingHeatmap(ProcessingLaplacianPlot, laplacian, _processingGrid, "拉普拉斯算子");
+    }
+
+    private static void RenderProcessingHeatmap(
+        ScottPlot.WPF.WpfPlot plot,
+        double[,]? values,
+        ProcessingGridData? grid,
+        string title)
+    {
+        plot.Plot.Clear();
+        if (values is not null && grid is not null &&
+            values.Cast<double>().Any(value => !double.IsNaN(value)))
+        {
+            var heatmap = plot.Plot.Add.Heatmap(values);
+            heatmap.CellAlignment = ScottPlot.Alignment.LowerLeft;
+            heatmap.Rectangle = new ScottPlot.CoordinateRect(
+                grid.XValues[0] - grid.StepX / 2,
+                grid.XValues[^1] + grid.StepX / 2,
+                grid.YValues[0] - grid.StepY / 2,
+                grid.YValues[^1] + grid.StepY / 2);
+            heatmap.Colormap = new ScottPlot.Colormaps.Turbo();
+            plot.Plot.Axes.SetLimits(
+                grid.XValues[0] - grid.StepX / 2,
+                grid.XValues[^1] + grid.StepX / 2,
+                grid.YValues[0] - grid.StepY / 2,
+                grid.YValues[^1] + grid.StepY / 2);
+        }
+
+        plot.Plot.Title(title);
+        plot.Plot.XLabel("X (mm)");
+        plot.Plot.YLabel("Y (mm)");
+        plot.Refresh();
+    }
+
+    private static double[,]? BuildLaplacianGrid(ProcessingGridData? grid)
+    {
+        if (grid is null || grid.Values.GetLength(0) < 3 || grid.Values.GetLength(1) < 3)
+        {
+            return null;
+        }
+
+        int rows = grid.Values.GetLength(0);
+        int columns = grid.Values.GetLength(1);
+        double[,] result = new double[rows, columns];
+        for (int row = 0; row < rows; row++)
+        {
+            for (int column = 0; column < columns; column++)
+            {
+                result[row, column] = double.NaN;
+            }
+        }
+
+        double dx2 = Math.Max(grid.StepX * grid.StepX, 1e-12);
+        double dy2 = Math.Max(grid.StepY * grid.StepY, 1e-12);
+        for (int row = 1; row < rows - 1; row++)
+        {
+            for (int column = 1; column < columns - 1; column++)
+            {
+                double center = grid.Values[row, column];
+                double left = grid.Values[row, column - 1];
+                double right = grid.Values[row, column + 1];
+                double down = grid.Values[row - 1, column];
+                double up = grid.Values[row + 1, column];
+                if (double.IsNaN(center) || double.IsNaN(left) || double.IsNaN(right) ||
+                    double.IsNaN(down) || double.IsNaN(up))
+                {
+                    continue;
+                }
+
+                result[row, column] =
+                    (left - 2 * center + right) / dx2 +
+                    (down - 2 * center + up) / dy2;
+            }
+        }
+
+        return result;
+    }
+
+    private void ResetProcessingSurface()
+    {
+        _processingSurfaceDataGroup.Children.Clear();
+        if (_processingGrid is null)
+        {
+            return;
+        }
+
+        double spanX = Math.Max(_processingGrid.XValues[^1] - _processingGrid.XValues[0], 60);
+        double spanZ = Math.Max(_processingGrid.YValues[^1] - _processingGrid.YValues[0], 60);
+        _processingSurfaceDataGroup.Children.Add(CreateBasePlateModel(spanX, spanZ));
+    }
+
+    private void RebuildProcessingSurface()
+    {
+        if (_processingGrid is null)
+        {
+            ResetProcessingSurface();
+            return;
+        }
+
+        ResetProcessingSurface();
+        double markerSize = Math.Max(Math.Min(_processingGrid.StepX, _processingGrid.StepY) * 0.28, 0.8);
+        double centerX = (_processingGrid.XValues[0] + _processingGrid.XValues[^1]) / 2;
+        double centerZ = (_processingGrid.YValues[0] + _processingGrid.YValues[^1]) / 2;
+        Dictionary<Color, MeshGeometry3D> buckets = new();
+
+        for (int row = 0; row < _processingGrid.Values.GetLength(0); row++)
+        {
+            for (int column = 0; column < _processingGrid.Values.GetLength(1); column++)
+            {
+                double voltage = _processingGrid.Values[row, column];
+                if (double.IsNaN(voltage) || voltage < 0)
+                {
+                    continue;
+                }
+
+                Color color = QuantizeSurfaceColor(voltage / SurfaceVoltageMax);
+                if (!buckets.TryGetValue(color, out MeshGeometry3D? mesh))
+                {
+                    mesh = new MeshGeometry3D();
+                    buckets.Add(color, mesh);
+                }
+
+                double centeredX = _processingGrid.XValues[column] - centerX;
+                double centeredZ = _processingGrid.YValues[row] - centerZ;
+                AddCubeToMesh(mesh, centeredX, centeredZ, NormalizeVoltage(voltage) * SurfaceHeightUnit, markerSize);
+            }
+        }
+
+        foreach ((Color color, MeshGeometry3D mesh) in buckets)
+        {
+            if (mesh.Positions.Count > 0)
+            {
+                _processingSurfaceDataGroup.Children.Add(CreateColoredModel(mesh, color));
+            }
+        }
+    }
+
+    private void ProcessingSurfaceControl_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (_processingSurfaceHeightScale is not null)
+        {
+            _processingSurfaceHeightScale.ScaleY = ProcessingHeightScaleSlider.Value;
+        }
+    }
+
+    private void UseCurrentScanDataButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_heatmapData is null || _scanPlan is null ||
+            !_heatmapData.Cast<double>().Any(value => !double.IsNaN(value)))
+        {
+            MessageBox.Show("当前没有可处理的扫描数据。", "数据处理", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        _processingUsesCurrentScan = true;
+        SetProcessingGridFromCurrentScan();
+        RenderProcessingVisuals();
+        ProcessingDataSummaryTextBlock.Text = "数据来源：当前扫描结果。";
+    }
+
+    private void SetProcessingGridFromCurrentScan()
+    {
+        if (_heatmapData is null || _scanPlan is null)
+        {
+            _processingGrid = null;
+            return;
+        }
+
+        double[] xValues = Enumerable.Range(0, _heatmapData.GetLength(1))
+            .Select(column => _scanPlan.MinX + column * _scanPlan.StepX).ToArray();
+        double[] yValues = Enumerable.Range(0, _heatmapData.GetLength(0))
+            .Select(row => _scanPlan.MinY + row * _scanPlan.StepY).ToArray();
+        _processingGrid = new ProcessingGridData
+        {
+            XValues = xValues,
+            YValues = yValues,
+            Values = _heatmapData,
+        };
+    }
+
+    private void ImportMeasurementDataButton_Click(object sender, RoutedEventArgs e)
+    {
+        OpenFileDialog dialog = new()
+        {
+            Title = "导入测量数据",
+            Filter = "CSV 测量数据|*.csv;*.txt|所有文件|*.*",
+            Multiselect = false,
+        };
+        if (dialog.ShowDialog() != true)
+        {
+            return;
+        }
+
+        try
+        {
+            ProcessingGridData grid = LoadProcessingGridFromCsv(dialog.FileName);
+            _processingGrid = grid;
+            _processingUsesCurrentScan = false;
+            RenderProcessingVisuals();
+            ProcessingDataSummaryTextBlock.Text = $"数据来源：{Path.GetFileName(dialog.FileName)}，{grid.XValues.Length} × {grid.YValues.Length} 网格。";
+            AppendLog($"已导入数据处理文件：{dialog.FileName}");
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "导入测量数据失败", MessageBoxButton.OK, MessageBoxImage.Error);
+            AppendLog($"导入测量数据失败: {ex.Message}");
+        }
+    }
+
+    private static ProcessingGridData LoadProcessingGridFromCsv(string filePath)
+    {
+        string[] lines = File.ReadAllLines(filePath, Encoding.UTF8)
+            .Where(line => !string.IsNullOrWhiteSpace(line))
+            .ToArray();
+        if (lines.Length == 0)
+        {
+            throw new InvalidOperationException("文件没有有效内容。格式应包含 X、Y、Voltage 列。 ");
+        }
+
+        char separator = lines[0].Contains(';') ? ';' : ',';
+        string[] firstColumns = SplitCsvLine(lines[0], separator);
+        int xIndex = FindColumnIndex(firstColumns, "x", "X坐标", "横坐标");
+        int yIndex = FindColumnIndex(firstColumns, "y", "Y坐标", "纵坐标");
+        int voltageIndex = FindColumnIndex(firstColumns, "voltage", "电压", "value", "数值");
+        bool hasHeader = xIndex >= 0 && yIndex >= 0 && voltageIndex >= 0;
+
+        if (!hasHeader)
+        {
+            xIndex = firstColumns.Length >= 5 ? 2 : 1;
+            yIndex = firstColumns.Length >= 5 ? 3 : 2;
+            voltageIndex = firstColumns.Length >= 5 ? 4 : 3;
+        }
+
+        Dictionary<(double X, double Y), List<double>> cells = new();
+        int start = hasHeader ? 1 : 0;
+        for (int lineIndex = start; lineIndex < lines.Length; lineIndex++)
+        {
+            string[] columns = SplitCsvLine(lines[lineIndex], separator);
+            int maxIndex = Math.Max(xIndex, Math.Max(yIndex, voltageIndex));
+            if (columns.Length <= maxIndex ||
+                !TryParseNumber(columns[xIndex], out double x) ||
+                !TryParseNumber(columns[yIndex], out double y) ||
+                !TryParseNumber(columns[voltageIndex], out double voltage))
+            {
+                continue;
+            }
+
+            var key = (x, y);
+            if (!cells.TryGetValue(key, out List<double>? values))
+            {
+                values = new List<double>();
+                cells.Add(key, values);
+            }
+            values.Add(voltage);
+        }
+
+        if (cells.Count == 0)
+        {
+            throw new InvalidOperationException("没有解析出有效测量点。请检查 CSV 是否包含 X、Y、Voltage（或电压）列。 ");
+        }
+
+        double[] xValues = cells.Keys.Select(key => key.X).Distinct().OrderBy(value => value).ToArray();
+        double[] yValues = cells.Keys.Select(key => key.Y).Distinct().OrderBy(value => value).ToArray();
+        double[,] valuesGrid = new double[yValues.Length, xValues.Length];
+        for (int row = 0; row < yValues.Length; row++)
+        {
+            for (int column = 0; column < xValues.Length; column++)
+            {
+                valuesGrid[row, column] = double.NaN;
+            }
+        }
+
+        foreach ((double x, double y) in cells.Keys)
+        {
+            int column = Array.IndexOf(xValues, x);
+            int row = Array.IndexOf(yValues, y);
+            valuesGrid[row, column] = cells[(x, y)].Average();
+        }
+
+        return new ProcessingGridData
+        {
+            XValues = xValues,
+            YValues = yValues,
+            Values = valuesGrid,
+        };
+    }
+
+    private static string[] SplitCsvLine(string line, char separator)
+    {
+        return line.Split(separator).Select(value => value.Trim().Trim('"')).ToArray();
+    }
+
+    private static int FindColumnIndex(IEnumerable<string> columns, params string[] names)
+    {
+        string[] normalizedNames = names.Select(NormalizeColumnName).ToArray();
+        (string? Name, int Index) match = columns
+            .Select((column, index) => (Name: NormalizeColumnName(column), Index: index))
+            .FirstOrDefault(item => normalizedNames.Contains(item.Name));
+        return match.Name is null ? -1 : match.Index;
+    }
+
+    private static string NormalizeColumnName(string value)
+    {
+        return value.Trim().Trim('"').Replace(" ", string.Empty).Replace("_", string.Empty).ToLowerInvariant();
+    }
+
+    private static bool TryParseNumber(string text, out double value)
+    {
+        return double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out value) ||
+               double.TryParse(text, NumberStyles.Float, CultureInfo.CurrentCulture, out value);
+    }
+
+    private void SaveProcessingImagesButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_processingGrid is null || !_processingGrid.Values.Cast<double>().Any(value => !double.IsNaN(value)))
+        {
+            MessageBox.Show("当前没有可保存的数据处理图像。", "保存图像", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        SaveFileDialog dialog = new()
+        {
+            Title = "保存数据处理图像",
+            Filter = "PNG 图像|*.png",
+            FileName = $"DataProcessing_{DateTime.Now:yyyyMMdd_HHmmss}.png",
+            AddExtension = true,
+            DefaultExt = ".png",
+        };
+        if (dialog.ShowDialog() != true)
+        {
+            return;
+        }
+
+        string directory = Path.GetDirectoryName(dialog.FileName) ?? AppContext.BaseDirectory;
+        string stem = Path.GetFileNameWithoutExtension(dialog.FileName);
+        string rawPath = Path.Combine(directory, stem + "_RawHeatmap.png");
+        string laplacianPath = Path.Combine(directory, stem + "_Laplacian.png");
+        string surfacePath = Path.Combine(directory, stem + "_3D.png");
+        ProcessingRawHeatmapPlot.Plot.SavePng(rawPath, 1200, 800);
+        ProcessingLaplacianPlot.Plot.SavePng(laplacianPath, 1200, 800);
+        SaveProcessingSurfacePng(surfacePath);
+        AppendLog($"数据处理图像已保存：{directory}");
+        MessageBox.Show($"已保存三张图像：\n{rawPath}\n{laplacianPath}\n{surfacePath}", "保存成功", MessageBoxButton.OK, MessageBoxImage.Information);
+    }
+
+    private void SaveProcessingSurfacePng(string path)
+    {
+        int width = Math.Max(800, (int)Math.Round(ProcessingSurfaceViewport.ActualWidth));
+        int height = Math.Max(500, (int)Math.Round(ProcessingSurfaceViewport.ActualHeight));
+        RenderTargetBitmap bitmap = new(width, height, 96, 96, PixelFormats.Pbgra32);
+        bitmap.Render(ProcessingSurfaceViewport);
+        PngBitmapEncoder encoder = new();
+        encoder.Frames.Add(BitmapFrame.Create(bitmap));
+        using FileStream stream = File.Create(path);
+        encoder.Save(stream);
+    }
     private void RefreshPortList()
     {
         string[] ports = SerialPort.GetPortNames().OrderBy(name => name).ToArray();
@@ -563,6 +968,12 @@ public partial class MainWindow : Window
         ResetSurface();
         SurfaceViewport.ZoomExtents(0);
         RenderVisuals(force: true);
+        if (_processingUsesCurrentScan)
+        {
+            SetProcessingGridFromCurrentScan();
+            RenderProcessingVisuals();
+            ProcessingDataSummaryTextBlock.Text = "数据来源：当前扫描结果。";
+        }
     }
 
     private void ApplyScannedPoint(PointScannedEventArgs args)
@@ -634,6 +1045,10 @@ public partial class MainWindow : Window
 
         _lastPlotRefresh = DateTime.Now;
         RenderHeatmap();
+        if (_processingUsesCurrentScan)
+        {
+            RenderProcessingCharts();
+        }
     }
 
     private void RenderHeatmap()
@@ -730,7 +1145,8 @@ public partial class MainWindow : Window
 
     private void AddMarkerToBuckets(Dictionary<Color, MeshGeometry3D> buckets, double x, double y, double voltage, double markerSize)
     {
-        if (double.IsNaN(voltage) || voltage < 0)
+        ScanPlanInfo? scanPlan = _scanPlan;
+        if (scanPlan is null || double.IsNaN(voltage) || voltage < 0)
         {
             return;
         }
@@ -742,8 +1158,8 @@ public partial class MainWindow : Window
             buckets.Add(color, mesh);
         }
 
-        double centeredX = x - (_scanPlan.MinX + _scanPlan.MaxX / 2.0);
-        double centeredZ = y - (_scanPlan.MinY + _scanPlan.MaxY / 2.0);
+        double centeredX = x - (scanPlan.MinX + scanPlan.MaxX) / 2.0;
+        double centeredZ = y - (scanPlan.MinY + scanPlan.MaxY) / 2.0;
         double height = NormalizeVoltage(voltage) * SurfaceHeightUnit;
         AddCubeToMesh(mesh, centeredX, centeredZ, height, markerSize);
     }
@@ -1269,6 +1685,7 @@ private void LoadPresetList(string? selectPresetName = null)
     {
         SetupPage.Visibility = pageKey == "Setup" ? Visibility.Visible : Visibility.Collapsed;
         MonitorPage.Visibility = pageKey == "Monitor" ? Visibility.Visible : Visibility.Collapsed;
+        ProcessingPage.Visibility = pageKey == "Processing" ? Visibility.Visible : Visibility.Collapsed;
         DataPage.Visibility = pageKey == "Data" ? Visibility.Visible : Visibility.Collapsed;
 
         switch (pageKey)
@@ -1280,7 +1697,11 @@ private void LoadPresetList(string? selectPresetName = null)
             case "Data":
                 CurrentPageTitleTextBlock.Text = "数据与日志";
                 CurrentPageHintTextBlock.Text = "查看点位明细、扫描日志，并从这里导出 CSV。";
+                break;            case "Processing":
+                CurrentPageTitleTextBlock.Text = "数据处理";
+                CurrentPageHintTextBlock.Text = "根据当前扫描或导入的测量数据生成热力图、3D 柱形图和拉普拉斯分布图。";
                 break;
+
             default:
                 CurrentPageTitleTextBlock.Text = "设备与参数";
                 CurrentPageHintTextBlock.Text = "先连接控制串口和传感串口，再设置扫描范围、步长和设备命令。";
