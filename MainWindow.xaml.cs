@@ -2,8 +2,10 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
 using System.IO.Ports;
-using Microsoft.Win32;
+using System.Reflection;
 using System.Text;
+using System.Text.Json;
+using Microsoft.Win32;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -40,6 +42,10 @@ public partial class MainWindow : Window
     private readonly Model3DGroup _surfaceDataGroup = new();
     private readonly Model3DGroup _processingSurfaceScene = new();
     private readonly Model3DGroup _processingSurfaceDataGroup = new();
+    private readonly Model3DGroup _processingScatterScene = new();
+    private readonly Model3DGroup _processingScatterDataGroup = new();
+    private readonly Model3DGroup _processingPinnCompareScene = new();
+    private readonly Model3DGroup _processingPinnCompareDataGroup = new();
     private ProbeControlWindow? _probeControlWindow;
     private CameraWindow? _cameraWindow;
 
@@ -55,7 +61,10 @@ public partial class MainWindow : Window
     private DateTime _lastSurfaceRebuild = DateTime.MinValue;
     private ScaleTransform3D? _surfaceHeightScale;
     private ScaleTransform3D? _processingSurfaceHeightScale;
+    private ScaleTransform3D? _processingScatterHeightScale;
     private ProcessingGridData? _processingGrid;
+    private PythonAnalysisResult? _pythonAnalysisResult;
+    private int _analysisRunVersion;
     private bool _processingUsesCurrentScan = true;
     private ScanParameter? _lastScanParameter;
     private bool _analysisButtonAdded;
@@ -63,6 +72,7 @@ public partial class MainWindow : Window
 
     public MainWindow()
     {
+        ScottPlot.Fonts.Default = "Microsoft YaHei UI";
         InitializeComponent();
         NormalizeUiText();
 
@@ -70,6 +80,8 @@ public partial class MainWindow : Window
         SourceInitialized += (_, _) => EnsureWindowFitsWorkArea();
         InitializeThreeDScene();
         InitializeProcessingThreeDScene();
+        InitializeProcessingScatterScene();
+        InitializeProcessingPinnCompareScene();
         ConfigureUiDefaults();
         ConfigureControllerEvents();
         EnsureAnalysisEntryPoint();
@@ -530,6 +542,37 @@ public partial class MainWindow : Window
         });
     }
 
+    private void InitializeProcessingScatterScene()
+    {
+        _processingScatterHeightScale = new ScaleTransform3D(1, ProcessingScatterHeightScaleSlider.Value, 1);
+        _processingScatterDataGroup.Transform = _processingScatterHeightScale;
+
+        _processingScatterScene.Children.Add(new AmbientLight(Color.FromRgb(90, 100, 110)));
+        _processingScatterScene.Children.Add(new DirectionalLight(Color.FromRgb(255, 244, 224), new Vector3D(-1, -1.6, -1.2)));
+        _processingScatterScene.Children.Add(new DirectionalLight(Color.FromRgb(120, 186, 255), new Vector3D(1, -0.7, 0.3)));
+        _processingScatterScene.Children.Add(_processingScatterDataGroup);
+
+        ProcessingScatterViewport.Children.Clear();
+        ProcessingScatterViewport.Children.Add(new ModelVisual3D
+        {
+            Content = _processingScatterScene,
+        });
+    }
+
+    private void InitializeProcessingPinnCompareScene()
+    {
+        _processingPinnCompareScene.Children.Add(new AmbientLight(Color.FromRgb(90, 100, 110)));
+        _processingPinnCompareScene.Children.Add(new DirectionalLight(Color.FromRgb(255, 244, 224), new Vector3D(-1, -1.6, -1.2)));
+        _processingPinnCompareScene.Children.Add(new DirectionalLight(Color.FromRgb(120, 186, 255), new Vector3D(1, -0.7, 0.3)));
+        _processingPinnCompareScene.Children.Add(_processingPinnCompareDataGroup);
+
+        ProcessingPinnCompareViewport.Children.Clear();
+        ProcessingPinnCompareViewport.Children.Add(new ModelVisual3D
+        {
+            Content = _processingPinnCompareScene,
+        });
+    }
+
     private void RenderProcessingVisuals()
     {
         RenderProcessingCharts();
@@ -699,6 +742,7 @@ public partial class MainWindow : Window
         SetProcessingGridFromCurrentScan();
         RenderProcessingVisuals();
         ProcessingDataSummaryTextBlock.Text = "数据来源：当前扫描结果。";
+        RefreshPythonAnalysisAsync();
     }
 
     private void SetProcessingGridFromCurrentScan()
@@ -742,6 +786,7 @@ public partial class MainWindow : Window
             RenderProcessingVisuals();
             ProcessingDataSummaryTextBlock.Text = $"数据来源：{Path.GetFileName(dialog.FileName)}，{grid.XValues.Length} × {grid.YValues.Length} 网格。";
             AppendLog($"已导入数据处理文件：{dialog.FileName}");
+            RefreshPythonAnalysisAsync();
         }
         catch (Exception ex)
         {
@@ -863,40 +908,972 @@ public partial class MainWindow : Window
 
         SaveFileDialog dialog = new()
         {
-            Title = "保存数据处理图像",
-            Filter = "PNG 图像|*.png",
-            FileName = $"DataProcessing_{DateTime.Now:yyyyMMdd_HHmmss}.png",
+            Title = "导出数据处理交互图",
+            Filter = "交互式网页 (*.html)|*.html",
+            FileName = $"DataProcessing_{DateTime.Now:yyyyMMdd_HHmmss}.html",
             AddExtension = true,
-            DefaultExt = ".png",
+            DefaultExt = ".html",
         };
         if (dialog.ShowDialog() != true)
         {
             return;
         }
 
-        string directory = Path.GetDirectoryName(dialog.FileName) ?? AppContext.BaseDirectory;
-        string stem = Path.GetFileNameWithoutExtension(dialog.FileName);
-        string rawPath = Path.Combine(directory, stem + "_RawHeatmap.png");
-        string laplacianPath = Path.Combine(directory, stem + "_Laplacian.png");
-        string surfacePath = Path.Combine(directory, stem + "_3D.png");
-        ProcessingRawHeatmapPlot.Plot.SavePng(rawPath, 1200, 800);
-        ProcessingLaplacianPlot.Plot.SavePng(laplacianPath, 1200, 800);
-        SaveProcessingSurfacePng(surfacePath);
-        AppendLog($"数据处理图像已保存：{directory}");
-        MessageBox.Show($"已保存三张图像：\n{rawPath}\n{laplacianPath}\n{surfacePath}", "保存成功", MessageBoxButton.OK, MessageBoxImage.Information);
+        ExportInteractiveHtml(dialog.FileName);
+
+        AppendLog($"数据处理交互图已导出：{dialog.FileName}");
+        MessageBox.Show(
+            $"已导出交互式图像到：\n{dialog.FileName}\n\n用浏览器打开后：\n· 2D 图可拖动、滚轮缩放\n· 3D 图可拖动旋转、滚轮缩放",
+            "导出成功",
+            MessageBoxButton.OK,
+            MessageBoxImage.Information);
     }
 
-    private void SaveProcessingSurfacePng(string path)
+    // --------------------------------------------------------------------- #
+    // 交互式图像导出：把 9 张图打包成一个自包含 HTML（内嵌 Plotly.js），
+    // 2D 图用 Plotly 2D（可平移缩放），3D 图用 Plotly 3D（可旋转缩放）。
+    // --------------------------------------------------------------------- #
+    private sealed record HtmlChart(string Id, string Title, object[] Traces, object Layout, bool Is3D = false);
+
+    private void ExportInteractiveHtml(string path)
     {
-        int width = Math.Max(800, (int)Math.Round(ProcessingSurfaceViewport.ActualWidth));
-        int height = Math.Max(500, (int)Math.Round(ProcessingSurfaceViewport.ActualHeight));
-        RenderTargetBitmap bitmap = new(width, height, 96, 96, PixelFormats.Pbgra32);
-        bitmap.Render(ProcessingSurfaceViewport);
-        PngBitmapEncoder encoder = new();
-        encoder.Frames.Add(BitmapFrame.Create(bitmap));
-        using FileStream stream = File.Create(path);
-        encoder.Save(stream);
+        string plotlyJs = LoadPlotlyJs();
+        List<HtmlChart> charts = BuildInteractiveCharts();
+
+        StringBuilder html = new();
+        html.Append("<!doctype html>\n<html lang=\"zh-CN\">\n<head>\n<meta charset=\"utf-8\">\n");
+        html.Append("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n");
+        html.Append("<title>数据处理交互图</title>\n<style>\n");
+        html.Append(":root{color-scheme:dark}body{font-family:\"Microsoft YaHei UI\",\"Microsoft YaHei\",\"Segoe UI\",sans-serif;background:#17191d;color:#e7e9ec;margin:0;padding:28px 20px 100px}h1{font-size:22px;font-weight:600;margin:0 0 4px}p.sub{color:#8b93a1;font-size:13px;margin:0 0 28px}.card{background:#1e2126;border:1px solid #2b2f36;border-radius:10px;padding:14px 16px 6px;margin-bottom:22px}.card h2{font-size:15px;font-weight:600;margin:0 0 4px}.chart{width:100%;height:480px}.chart-3d{height:540px}");
+        html.Append("\n</style>\n</head>\n<body>\n<h1>数据处理交互图</h1>\n");
+        html.Append("<p class=\"sub\">2D 图可拖动、滚轮缩放；3D 图可拖动旋转、滚轮缩放。右上角工具栏可把当前图另存为 PNG。</p>\n");
+
+        foreach (HtmlChart chart in charts)
+        {
+            string chartClass = chart.Is3D ? "chart chart-3d" : "chart";
+            html.Append("<div class=\"card\"><h2>").Append(chart.Title).Append("</h2><div id=\"")
+                .Append(chart.Id).Append("\" class=\"").Append(chartClass).Append("\"></div></div>\n");
+        }
+
+        html.Append("<script>\n").Append(plotlyJs).Append("\n</script>\n");
+        html.Append("<script>\n(function(){\n");
+        html.Append("var CONFIG={responsive:true,displaylogo:false,scrollZoom:true,modeBarButtonsToRemove:['lasso2d','select2d']};\n");
+        foreach (HtmlChart chart in charts)
+        {
+            string tracesJson = JsonSerializer.Serialize(chart.Traces);
+            string layoutJson = JsonSerializer.Serialize(chart.Layout);
+            html.Append("Plotly.newPlot('").Append(chart.Id).Append("', ")
+                .Append(tracesJson).Append(", ").Append(layoutJson).Append(", CONFIG);\n");
+        }
+
+        html.Append("})();\n</script>\n</body>\n</html>");
+
+        File.WriteAllText(path, html.ToString(), new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
     }
+
+    private static string LoadPlotlyJs()
+    {
+        using Stream? stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("plotly.min.js");
+        if (stream is null)
+        {
+            throw new InvalidOperationException("未找到内置的 plotly.min.js 资源。");
+        }
+
+        using StreamReader reader = new(stream, Encoding.UTF8);
+        return reader.ReadToEnd();
+    }
+
+    private List<HtmlChart> BuildInteractiveCharts()
+    {
+        List<HtmlChart> charts = new();
+        ProcessingGridData grid = _processingGrid!;
+        PythonAnalysisResult? result = _pythonAnalysisResult;
+
+        double[] x = grid.XValues;
+        double[] y = grid.YValues;
+        double?[][] raw = ToNullableGrid(grid.Values);
+        double?[][] laplacian = BuildLaplacianGrid(grid) is double[,] lap ? ToNullableGrid(lap) : Array.Empty<double?[]>();
+
+        charts.Add(new HtmlChart("rawHeatmap", "原始测量电压",
+            new object[] { new { type = "heatmap", z = raw, x, y, colorscale = "Turbo" } },
+            TwoDLayout("原始测量电压", "X (mm)", "Y (mm)")));
+
+        charts.Add(new HtmlChart("surface3d", "空间3D柱形图",
+            new object[] { new { type = "surface", z = raw, x, y, colorscale = "Turbo" } },
+            ThreeDLayout("空间3D柱形图", "X (mm)", "Y (mm)", "电压 (V)"),
+            Is3D: true));
+
+        charts.Add(new HtmlChart("laplacian", "拉普拉斯算子",
+            new object[] { new { type = "heatmap", z = laplacian, x, y, colorscale = "Turbo" } },
+            TwoDLayout("拉普拉斯算子", "X (mm)", "Y (mm)")));
+
+        BuildElectricFieldChart(charts, result);
+        BuildLaplacianHistogramChart(charts, result);
+        BuildScatter3DChart(charts, result);
+
+        AnalysisPinn? pinn = result?.Pinn;
+        if (pinn?.Predicted is not null && pinn.X is { Length: > 0 } && pinn.Y is { Length: > 0 })
+        {
+            charts.Add(new HtmlChart("pinnHeatmap", "拟合电压分布图",
+                new object[] { new { type = "heatmap", z = ToNullableGrid(pinn.Predicted), x = pinn.X, y = pinn.Y, colorscale = "Turbo" } },
+                TwoDLayout($"拟合电压分布图 · RMSE {pinn.Rmse:F4} · MAE {pinn.Mae:F4}", "X (mm)", "Y (mm)")));
+        }
+        else
+        {
+            charts.Add(new HtmlChart("pinnHeatmap", "拟合电压分布图（未检测到 PINN 模型）",
+                Array.Empty<object>(),
+                TwoDLayout("拟合电压分布图（未检测到 PINN 模型）", "X (mm)", "Y (mm)")));
+        }
+
+        BuildPinnCompare3DChart(charts, pinn);
+        BuildErrorChart(charts, pinn);
+
+        return charts;
+    }
+
+    private static void BuildElectricFieldChart(List<HtmlChart> charts, PythonAnalysisResult? result)
+    {
+        AnalysisGrid? gridData = result?.Grid;
+        double?[][] cleaned = ToNullableGrid(gridData?.Cleaned);
+        double[] gx = gridData?.X ?? Array.Empty<double>();
+        double[] gy = gridData?.Y ?? Array.Empty<double>();
+
+        List<object> traces = new();
+        if (cleaned.Length > 0 && cleaned[0].Length > 0)
+        {
+            traces.Add(new { type = "heatmap", z = cleaned, x = gx, y = gy, colorscale = "Turbo" });
+        }
+
+        List<object> annotations = new();
+        AnalysisElectricField? field = result?.ElectricField;
+        if (field?.X is { Length: > 0 } && field.Y is { Length: > 0 } &&
+            field.Ex is { Length: > 0 } && field.Ey is { Length: > 0 })
+        {
+            double arrowScale = Math.Max(EstimateGridStep(gx, gy) * 0.8, 1e-3);
+            for (int i = 0; i < field.X.Length; i++)
+            {
+                double ax = field.X[i];
+                double ay = field.Y[i];
+                double ex = field.Ex[i];
+                double ey = field.Ey[i];
+                if (double.IsNaN(ax) || double.IsNaN(ay) || double.IsNaN(ex) || double.IsNaN(ey))
+                {
+                    continue;
+                }
+
+                annotations.Add(new
+                {
+                    x = ax,
+                    y = ay,
+                    ax = ax + ex * arrowScale,
+                    ay = ay + ey * arrowScale,
+                    xref = "x",
+                    yref = "y",
+                    axref = "x",
+                    ayref = "y",
+                    showarrow = true,
+                    arrowhead = 2,
+                    arrowsize = 1,
+                    arrowwidth = 1,
+                    arrowcolor = "#D6DBE0",
+                    opacity = 0.9,
+                });
+            }
+        }
+
+        charts.Add(new HtmlChart("electricField", "电场矢量分布图",
+            traces.ToArray(),
+            TwoDLayout("电场矢量分布图", "X (mm)", "Y (mm)", annotations: annotations.ToArray())));
+    }
+
+    private static void BuildLaplacianHistogramChart(List<HtmlChart> charts, PythonAnalysisResult? result)
+    {
+        AnalysisLaplacian? laplacian = result?.Laplacian;
+        if (laplacian?.Values is not { Length: > 0 })
+        {
+            charts.Add(new HtmlChart("histogram", "拉普拉斯分布直方图（无有效数据）",
+                Array.Empty<object>(),
+                TwoDLayout("拉普拉斯分布直方图（无有效数据）", "拉普拉斯值", "频数")));
+            return;
+        }
+
+        double[] values = laplacian.Values;
+        double min = values.Min();
+        double max = values.Max();
+        if (max - min < 1e-9)
+        {
+            max = min + 1;
+        }
+
+        int binCount = Math.Clamp((int)Math.Round(Math.Sqrt(values.Length) * 2), 10, 60);
+        double binWidth = (max - min) / binCount;
+        double[] counts = new double[binCount];
+        double[] centers = new double[binCount];
+        foreach (double value in values)
+        {
+            int index = Math.Clamp((int)((value - min) / binWidth), 0, binCount - 1);
+            counts[index]++;
+        }
+
+        for (int i = 0; i < binCount; i++)
+        {
+            centers[i] = min + (i + 0.5) * binWidth;
+        }
+
+        List<object> shapes = new()
+        {
+            new { type = "line", x0 = 0.0, y0 = 0.0, x1 = 0.0, y1 = 1.0, yref = "paper", line = new { color = "#8A93A0", width = 1.5 } },
+        };
+        if (laplacian.Mean is double mean)
+        {
+            shapes.Add(new { type = "line", x0 = mean, y0 = 0.0, x1 = mean, y1 = 1.0, yref = "paper", line = new { color = "#F0BA67", width = 1.5 } });
+        }
+
+        string title = $"拉普拉斯分布直方图 · 样本 {laplacian.Samples}";
+        if (laplacian.Std is double std)
+        {
+            title += $" · 标准差 {std:F4}";
+        }
+
+        charts.Add(new HtmlChart("histogram", "拉普拉斯分布直方图",
+            new object[] { new { type = "bar", x = centers, y = counts, marker = new { color = "#3E6FB4" } } },
+            TwoDLayout(title, "拉普拉斯值", "频数", shapes.ToArray())));
+    }
+
+    private static void BuildScatter3DChart(List<HtmlChart> charts, PythonAnalysisResult? result)
+    {
+        List<AnalysisPoint>? points = result?.Points;
+        if (points is null || points.Count == 0)
+        {
+            charts.Add(new HtmlChart("scatter3d", "3D空间散点图（无数据）",
+                Array.Empty<object>(),
+                ThreeDLayout("3D空间散点图（无数据）", "X (mm)", "Y (mm)", "电压 (V)"),
+                Is3D: true));
+            return;
+        }
+
+        List<double> normalX = new(), normalY = new(), normalV = new();
+        List<double> electrodeX = new(), electrodeY = new(), electrodeV = new();
+        List<double> anomalyX = new(), anomalyY = new(), anomalyV = new();
+        foreach (AnalysisPoint point in points)
+        {
+            switch (point.Category)
+            {
+                case "electrode":
+                    electrodeX.Add(point.X);
+                    electrodeY.Add(point.Y);
+                    electrodeV.Add(point.V);
+                    break;
+                case "anomaly":
+                    anomalyX.Add(point.X);
+                    anomalyY.Add(point.Y);
+                    anomalyV.Add(point.V);
+                    break;
+                default:
+                    normalX.Add(point.X);
+                    normalY.Add(point.Y);
+                    normalV.Add(point.V);
+                    break;
+            }
+        }
+
+        List<object> traces = new();
+        AddScatter3DTrace(traces, normalX, normalY, normalV, "#2E55A4", "正常");
+        AddScatter3DTrace(traces, electrodeX, electrodeY, electrodeV, "#F0BA67", "电极");
+        AddScatter3DTrace(traces, anomalyX, anomalyY, anomalyV, "#D96B76", "异常");
+
+        charts.Add(new HtmlChart("scatter3d", "3D空间散点图",
+            traces.ToArray(),
+            ThreeDLayout("3D空间散点图", "X (mm)", "Y (mm)", "电压 (V)"),
+            Is3D: true));
+    }
+
+    private static void AddScatter3DTrace(List<object> traces, List<double> xs, List<double> ys, List<double> vs, string color, string name)
+    {
+        if (xs.Count == 0)
+        {
+            return;
+        }
+
+        traces.Add(new { type = "scatter3d", mode = "markers", x = xs.ToArray(), y = ys.ToArray(), z = vs.ToArray(), marker = new { color, size = 3 }, name });
+    }
+
+    private static void BuildPinnCompare3DChart(List<HtmlChart> charts, AnalysisPinn? pinn)
+    {
+        if (pinn?.True is not null && pinn.Predicted is not null &&
+            pinn.X is { Length: > 0 } && pinn.Y is { Length: > 0 })
+        {
+            double?[][] trueGrid = ToNullableGrid(pinn.True);
+            double?[][] predictedGrid = ToNullableGrid(pinn.Predicted);
+            double minX = pinn.X.Min();
+            double maxX = pinn.X.Max();
+            double spanX = Math.Max(maxX - minX, 60);
+            double gap = spanX * 0.15;
+            double offset = spanX / 2 + gap / 2;
+
+            (double[] tx, double[] ty, double[] tz) = FlattenGrid(pinn.X, pinn.Y, trueGrid, -offset);
+            (double[] px, double[] py, double[] pz) = FlattenGrid(pinn.X, pinn.Y, predictedGrid, offset);
+
+            charts.Add(new HtmlChart("pinnCompare3d", "3D真实 vs 拟合对比",
+                new object[]
+                {
+                    new { type = "scatter3d", mode = "markers", x = tx, y = ty, z = tz, marker = new { color = "#2E55A4", size = 3 }, name = "真实" },
+                    new { type = "scatter3d", mode = "markers", x = px, y = py, z = pz, marker = new { color = "#D96B76", size = 3 }, name = "拟合" },
+                },
+                ThreeDLayout("3D真实 vs 拟合对比", "X (mm)", "Y (mm)", "电压 (V)"),
+                Is3D: true));
+        }
+        else
+        {
+            charts.Add(new HtmlChart("pinnCompare3d", "3D真实 vs 拟合对比（未检测到 PINN 模型）",
+                Array.Empty<object>(),
+                ThreeDLayout("3D真实 vs 拟合对比（未检测到 PINN 模型）", "X (mm)", "Y (mm)", "电压 (V)"),
+                Is3D: true));
+        }
+    }
+
+    private static void BuildErrorChart(List<HtmlChart> charts, AnalysisPinn? pinn)
+    {
+        if (pinn?.True is null || pinn.Predicted is null)
+        {
+            charts.Add(new HtmlChart("errorPlot", "误差分析图（未检测到 PINN 模型）",
+                Array.Empty<object>(),
+                TwoDLayout("误差分析图（未检测到 PINN 模型）", "测点序号", "残差 (预测 − 真实)")));
+            return;
+        }
+
+        double?[][] trueGrid = ToNullableGrid(pinn.True);
+        double?[][] predictedGrid = ToNullableGrid(pinn.Predicted);
+        List<double> indices = new();
+        List<double> residuals = new();
+        int rows = Math.Min(trueGrid.Length, predictedGrid.Length);
+        for (int r = 0; r < rows; r++)
+        {
+            int columns = Math.Min(trueGrid[r].Length, predictedGrid[r].Length);
+            for (int c = 0; c < columns; c++)
+            {
+                if (trueGrid[r][c] is double actual && predictedGrid[r][c] is double predicted)
+                {
+                    indices.Add(indices.Count + 1);
+                    residuals.Add(predicted - actual);
+                }
+            }
+        }
+
+        if (residuals.Count == 0)
+        {
+            charts.Add(new HtmlChart("errorPlot", "误差分析图（无有效残差）",
+                Array.Empty<object>(),
+                TwoDLayout("误差分析图（无有效残差）", "测点序号", "残差 (预测 − 真实)")));
+            return;
+        }
+
+        var shapes = new object[]
+        {
+            new { type = "line", x0 = 0.0, y0 = 0.0, x1 = 1.0, y1 = 0.0, xref = "paper", line = new { color = "#8A93A0", width = 1.5 } },
+        };
+
+        charts.Add(new HtmlChart("errorPlot", "误差分析图",
+            new object[] { new { type = "scatter", mode = "lines+markers", x = indices.ToArray(), y = residuals.ToArray(), line = new { color = "#D96B76", width = 1.5 }, marker = new { size = 3 } } },
+            TwoDLayout($"误差分析图 · RMSE {pinn.Rmse:F4} · MAE {pinn.Mae:F4}", "测点序号", "残差 (预测 − 真实)", shapes)));
+    }
+
+    private static (double[] X, double[] Y, double[] Z) FlattenGrid(double[] xs, double[] ys, double?[][] grid, double xOffset)
+    {
+        List<double> x = new();
+        List<double> y = new();
+        List<double> z = new();
+        for (int r = 0; r < grid.Length; r++)
+        {
+            double?[] row = grid[r];
+            for (int c = 0; c < row.Length && c < xs.Length; c++)
+            {
+                if (row[c] is double v)
+                {
+                    x.Add(xs[c] + xOffset);
+                    y.Add(r < ys.Length ? ys[r] : 0);
+                    z.Add(v);
+                }
+            }
+        }
+
+        return (x.ToArray(), y.ToArray(), z.ToArray());
+    }
+
+    private static double?[][] ToNullableGrid(double[,] grid)
+    {
+        int rows = grid.GetLength(0);
+        int columns = grid.GetLength(1);
+        double?[][] result = new double?[rows][];
+        for (int row = 0; row < rows; row++)
+        {
+            result[row] = new double?[columns];
+            for (int column = 0; column < columns; column++)
+            {
+                result[row][column] = double.IsNaN(grid[row, column]) ? null : grid[row, column];
+            }
+        }
+
+        return result;
+    }
+
+    private static double?[][] ToNullableGrid(double?[][]? grid)
+    {
+        if (grid is null || grid.Length == 0)
+        {
+            return Array.Empty<double?[]>();
+        }
+
+        double?[][] result = new double?[grid.Length][];
+        for (int row = 0; row < grid.Length; row++)
+        {
+            double?[]? line = grid[row];
+            int columns = line?.Length ?? 0;
+            result[row] = new double?[columns];
+            if (line is null)
+            {
+                continue;
+            }
+
+            for (int column = 0; column < columns; column++)
+            {
+                result[row][column] = line[column] is double d && double.IsNaN(d) ? null : line[column];
+            }
+        }
+
+        return result;
+    }
+
+    private static object TwoDLayout(string title, string xTitle, string yTitle, object[]? shapes = null, object[]? annotations = null)
+    {
+        return new
+        {
+            title,
+            paper_bgcolor = "rgba(0,0,0,0)",
+            plot_bgcolor = "rgba(0,0,0,0)",
+            font = new { color = "#e7e9ec", family = "Microsoft YaHei UI" },
+            margin = new { l = 64, r = 24, t = 44, b = 52 },
+            xaxis = new { title = xTitle, gridcolor = "#2f343b", zerolinecolor = "#2f343b" },
+            yaxis = new { title = yTitle, gridcolor = "#2f343b", zerolinecolor = "#2f343b" },
+            shapes = shapes ?? Array.Empty<object>(),
+            annotations = annotations ?? Array.Empty<object>(),
+        };
+    }
+
+    private static object ThreeDLayout(string title, string xTitle, string yTitle, string zTitle)
+    {
+        return new
+        {
+            title,
+            paper_bgcolor = "rgba(0,0,0,0)",
+            font = new { color = "#e7e9ec", family = "Microsoft YaHei UI" },
+            margin = new { l = 0, r = 0, t = 44, b = 0 },
+            scene = new
+            {
+                bgcolor = "rgba(0,0,0,0)",
+                xaxis = new { title = xTitle },
+                yaxis = new { title = yTitle },
+                zaxis = new { title = zTitle },
+            },
+        };
+    }
+    private void RenderPythonAnalysisCharts()
+    {
+        RenderElectricFieldPlot();
+        RenderLaplacianHistogram();
+        RebuildProcessingScatter();
+        ProcessingScatterViewport.ZoomExtents(0);
+        RenderPinnHeatmap();
+        RebuildPinnCompare();
+        ProcessingPinnCompareViewport.ZoomExtents(0);
+        RenderErrorPlot();
+    }
+
+    private string ReadAnomalyAlgorithm()
+    {
+        if (AnomalyAlgorithmComboBox.SelectedItem is ComboBoxItem item &&
+            item.Tag is string tag &&
+            !string.IsNullOrWhiteSpace(tag))
+        {
+            return tag;
+        }
+
+        return "iforest";
+    }
+
+    private async void RefreshPythonAnalysisAsync()
+    {
+        ProcessingGridData? grid = _processingGrid;
+        if (grid is null || !grid.Values.Cast<double>().Any(value => !double.IsNaN(value)))
+        {
+            _pythonAnalysisResult = null;
+            RenderPythonAnalysisCharts();
+            AnalysisStatusTextBlock.Text = "就绪";
+            return;
+        }
+
+        string algo = ReadAnomalyAlgorithm();
+        double[] xValues = (double[])grid.XValues.Clone();
+        double[] yValues = (double[])grid.YValues.Clone();
+        double[,] values = (double[,])grid.Values.Clone();
+        int runVersion = ++_analysisRunVersion;
+
+        AnalysisStatusTextBlock.Text = "分析中…";
+        try
+        {
+            PythonAnalysisResult result = await Task.Run(() =>
+                new PythonAnalysisService().RunAsync(xValues, yValues, values, algo));
+
+            if (runVersion != _analysisRunVersion)
+            {
+                return;
+            }
+
+            _pythonAnalysisResult = result;
+            RenderPythonAnalysisCharts();
+            AnalysisStatusTextBlock.Text =
+                $"完成 · 正常 {result.Counts?.Normal} · 电极 {result.Counts?.Electrode} · 异常 {result.Counts?.Anomaly}";
+            AppendLog($"Python 分析完成：算法 {algo}，正常/电极/异常 = {result.Counts?.Normal}/{result.Counts?.Electrode}/{result.Counts?.Anomaly}。");
+        }
+        catch (Exception ex)
+        {
+            if (runVersion != _analysisRunVersion)
+            {
+                return;
+            }
+
+            _pythonAnalysisResult = null;
+            RenderPythonAnalysisCharts();
+            AnalysisStatusTextBlock.Text = "分析失败";
+            AppendLog($"Python 分析失败: {ex.Message}");
+            MessageBox.Show(ex.Message, "Python 分析失败", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private async void AnomalyAlgorithmComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_processingGrid is null)
+        {
+            return;
+        }
+
+        RefreshPythonAnalysisAsync();
+    }
+
+    private void RenderElectricFieldPlot()
+    {
+        ScottPlot.WPF.WpfPlot plot = ProcessingElectricFieldPlot;
+        plot.Plot.Clear();
+        PythonAnalysisResult? result = _pythonAnalysisResult;
+        double[,] cleaned = ConvertNullableGrid(result?.Grid?.Cleaned);
+        double[]? xValues = result?.Grid?.X;
+        double[]? yValues = result?.Grid?.Y;
+
+        bool hasHeatmap = xValues is { Length: > 0 } && yValues is { Length: > 0 } &&
+            cleaned.GetLength(0) > 0 && cleaned.GetLength(1) > 0 &&
+            cleaned.Cast<double>().Any(value => !double.IsNaN(value));
+        if (hasHeatmap)
+        {
+            double stepX = xValues!.Length > 1 ? Math.Abs(xValues[1] - xValues[0]) : 1;
+            double stepY = yValues!.Length > 1 ? Math.Abs(yValues[1] - yValues[0]) : 1;
+            var heatmap = plot.Plot.Add.Heatmap(cleaned);
+            heatmap.CellAlignment = ScottPlot.Alignment.LowerLeft;
+            heatmap.Rectangle = new ScottPlot.CoordinateRect(
+                xValues[0] - stepX / 2, xValues[^1] + stepX / 2,
+                yValues[0] - stepY / 2, yValues[^1] + stepY / 2);
+            heatmap.Colormap = new ScottPlot.Colormaps.Turbo();
+            plot.Plot.Axes.SetLimits(
+                xValues[0] - stepX / 2, xValues[^1] + stepX / 2,
+                yValues[0] - stepY / 2, yValues[^1] + stepY / 2);
+        }
+
+        AnalysisElectricField? field = result?.ElectricField;
+        if (field?.X is { Length: > 0 } && field.Y is { Length: > 0 } &&
+            field.Ex is { Length: > 0 } && field.Ey is { Length: > 0 })
+        {
+            double arrowScale = Math.Max(EstimateGridStep(xValues, yValues) * 0.8, 1e-3);
+            ScottPlot.Color arrowColor = ScottPlot.Color.FromHex("#D6DBE0");
+            for (int i = 0; i < field.X.Length; i++)
+            {
+                double x = field.X[i];
+                double y = field.Y[i];
+                double ex = field.Ex[i];
+                double ey = field.Ey[i];
+                if (double.IsNaN(x) || double.IsNaN(y) || double.IsNaN(ex) || double.IsNaN(ey))
+                {
+                    continue;
+                }
+
+                var arrow = plot.Plot.Add.Arrow(x, y, x + ex * arrowScale, y + ey * arrowScale);
+                arrow.ArrowLineColor = arrowColor;
+                arrow.ArrowLineWidth = 1.5f;
+            }
+        }
+
+        plot.Plot.Title("电场矢量分布图");
+        plot.Plot.XLabel("X (mm)");
+        plot.Plot.YLabel("Y (mm)");
+        plot.Refresh();
+    }
+
+    private static void RenderGridHeatmap(
+        ScottPlot.WPF.WpfPlot plot,
+        double[]? xValues,
+        double[]? yValues,
+        double[,] values,
+        string title)
+    {
+        plot.Plot.Clear();
+        if (xValues is { Length: > 0 } && yValues is { Length: > 0 } &&
+            values.GetLength(0) > 0 && values.GetLength(1) > 0 &&
+            values.Cast<double>().Any(value => !double.IsNaN(value)))
+        {
+            double stepX = xValues.Length > 1 ? Math.Abs(xValues[1] - xValues[0]) : 1;
+            double stepY = yValues.Length > 1 ? Math.Abs(yValues[1] - yValues[0]) : 1;
+            var heatmap = plot.Plot.Add.Heatmap(values);
+            heatmap.CellAlignment = ScottPlot.Alignment.LowerLeft;
+            heatmap.Rectangle = new ScottPlot.CoordinateRect(
+                xValues[0] - stepX / 2, xValues[^1] + stepX / 2,
+                yValues[0] - stepY / 2, yValues[^1] + stepY / 2);
+            heatmap.Colormap = new ScottPlot.Colormaps.Turbo();
+            plot.Plot.Axes.SetLimits(
+                xValues[0] - stepX / 2, xValues[^1] + stepX / 2,
+                yValues[0] - stepY / 2, yValues[^1] + stepY / 2);
+        }
+
+        plot.Plot.Title(title);
+        plot.Plot.XLabel("X (mm)");
+        plot.Plot.YLabel("Y (mm)");
+        plot.Refresh();
+    }
+
+    private static double EstimateGridStep(double[]? xValues, double[]? yValues)
+    {
+        double stepX = xValues is { Length: > 1 } ? Math.Abs(xValues[1] - xValues[0]) : 0;
+        double stepY = yValues is { Length: > 1 } ? Math.Abs(yValues[1] - yValues[0]) : 0;
+        double step = stepX > 0 && stepY > 0 ? Math.Min(stepX, stepY) : (stepX > 0 ? stepX : stepY);
+        return step > 0 ? step : 1;
+    }
+
+    private void RenderLaplacianHistogram()
+    {
+        ScottPlot.WPF.WpfPlot plot = ProcessingLaplacianHistogramPlot;
+        plot.Plot.Clear();
+        AnalysisLaplacian? laplacian = _pythonAnalysisResult?.Laplacian;
+        if (laplacian?.Values is { Length: > 0 })
+        {
+            double[] values = laplacian.Values;
+            double min = values.Min();
+            double max = values.Max();
+            if (max - min < 1e-9)
+            {
+                max = min + 1;
+            }
+
+            int binCount = Math.Clamp((int)Math.Round(Math.Sqrt(values.Length) * 2), 10, 60);
+            double binWidth = (max - min) / binCount;
+            double[] counts = new double[binCount];
+            double[] centers = new double[binCount];
+            foreach (double value in values)
+            {
+                int index = Math.Clamp((int)((value - min) / binWidth), 0, binCount - 1);
+                counts[index]++;
+            }
+
+            for (int i = 0; i < binCount; i++)
+            {
+                centers[i] = min + (i + 0.5) * binWidth;
+            }
+
+            var bars = plot.Plot.Add.Bars(centers, counts);
+            bars.Color = ScottPlot.Color.FromHex("#3E6FB4");
+            foreach (ScottPlot.Bar bar in bars.Bars)
+            {
+                // ScottPlot 的 Bar.Size 默认是固定 0.8（数据单位），不会按分箱宽度自适应，
+                // 拉普拉斯值分箱很窄时所有柱子会重叠成一整块。这里显式设成分箱宽度，
+                // 与导出的 Plotly 柱状图一致。
+                bar.Size = binWidth * 0.9;
+            }
+
+            var zeroLine = plot.Plot.Add.VerticalLine(0);
+            zeroLine.LineColor = ScottPlot.Color.FromHex("#8A93A0");
+            zeroLine.LineWidth = 1.5f;
+
+            if (laplacian.Mean is double mean)
+            {
+                var meanLine = plot.Plot.Add.VerticalLine(mean);
+                meanLine.LineColor = ScottPlot.Color.FromHex("#F0BA67");
+                meanLine.LineWidth = 1.5f;
+                meanLine.LabelText = $"均值 {mean:F4}";
+            }
+
+            string title = $"拉普拉斯分布直方图 · 样本 {laplacian.Samples}";
+            if (laplacian.Std is double std)
+            {
+                title += $" · 标准差 {std:F4}";
+            }
+
+            plot.Plot.Title(title);
+        }
+        else
+        {
+            plot.Plot.Title("拉普拉斯分布直方图（无有效数据）");
+        }
+
+        plot.Plot.XLabel("拉普拉斯值");
+        plot.Plot.YLabel("频数");
+        // Clear() 不会重置坐标轴，重新分析（或先渲染过占位状态）后若不显式缩放，
+        // 会沿用旧的坐标范围导致图像变形。这里强制按当前数据自适应。
+        plot.Plot.Axes.AutoScale();
+        plot.Refresh();
+    }
+
+    private void RebuildProcessingScatter()
+    {
+        _processingScatterDataGroup.Children.Clear();
+        List<AnalysisPoint>? points = _pythonAnalysisResult?.Points;
+        if (points is null || points.Count == 0)
+        {
+            return;
+        }
+
+        double minX = points.Min(point => point.X);
+        double maxX = points.Max(point => point.X);
+        double minY = points.Min(point => point.Y);
+        double maxY = points.Max(point => point.Y);
+        double centerX = (minX + maxX) / 2;
+        double centerZ = (minY + maxY) / 2;
+        double spanX = Math.Max(maxX - minX, 60);
+        double spanZ = Math.Max(maxY - minY, 60);
+        double markerSize = ScatterMarkerSize();
+
+        _processingScatterDataGroup.Children.Add(CreateBasePlateModel(spanX, spanZ));
+
+        Dictionary<Color, MeshGeometry3D> buckets = new();
+        foreach (AnalysisPoint point in points)
+        {
+            Color color = point.Category switch
+            {
+                "electrode" => Color.FromRgb(240, 186, 103),
+                "anomaly" => Color.FromRgb(217, 107, 118),
+                _ => Color.FromRgb(46, 85, 164),
+            };
+
+            if (!buckets.TryGetValue(color, out MeshGeometry3D? mesh))
+            {
+                mesh = new MeshGeometry3D();
+                buckets.Add(color, mesh);
+            }
+
+            AddCubeToMesh(mesh, point.X - centerX, point.Y - centerZ, NormalizeVoltage(point.V) * SurfaceHeightUnit, markerSize);
+        }
+
+        foreach ((Color color, MeshGeometry3D mesh) in buckets)
+        {
+            if (mesh.Positions.Count > 0)
+            {
+                _processingScatterDataGroup.Children.Add(CreateColoredModel(mesh, color));
+            }
+        }
+    }
+
+    private double ScatterMarkerSize()
+    {
+        double[]? xValues = _pythonAnalysisResult?.Grid?.X;
+        if (xValues is { Length: > 1 })
+        {
+            double step = Math.Abs(xValues[1] - xValues[0]);
+            return Math.Clamp(step * 0.28, 0.8, 1.4);
+        }
+
+        return 1.0;
+    }
+
+    private void RenderPinnHeatmap()
+    {
+        PythonAnalysisResult? result = _pythonAnalysisResult;
+        if (result?.Pinn is null)
+        {
+            ProcessingPinnHeatmapPlot.Plot.Clear();
+            ProcessingPinnHeatmapPlot.Plot.Title("拟合电压分布图（未检测到 PINN 模型）");
+            ProcessingPinnHeatmapPlot.Refresh();
+            return;
+        }
+
+        double[,] predicted = ConvertNullableGrid(result.Pinn.Predicted);
+        RenderGridHeatmap(
+            ProcessingPinnHeatmapPlot,
+            result.Pinn.X,
+            result.Pinn.Y,
+            predicted,
+            $"拟合电压分布图 · RMSE {result.Pinn.Rmse:F4} · MAE {result.Pinn.Mae:F4}");
+    }
+
+    private void RebuildPinnCompare()
+    {
+        _processingPinnCompareDataGroup.Children.Clear();
+        AnalysisPinn? pinn = _pythonAnalysisResult?.Pinn;
+        if (pinn?.X is null || pinn.Y is null || pinn.True is null || pinn.Predicted is null)
+        {
+            return;
+        }
+
+        double[,] trueGrid = ConvertNullableGrid(pinn.True);
+        double[,] predictedGrid = ConvertNullableGrid(pinn.Predicted);
+        if (trueGrid.GetLength(0) == 0 || predictedGrid.GetLength(0) == 0 ||
+            pinn.X.Length == 0 || pinn.Y.Length == 0)
+        {
+            return;
+        }
+
+        double minX = pinn.X.Min();
+        double maxX = pinn.X.Max();
+        double minY = pinn.Y.Min();
+        double maxY = pinn.Y.Max();
+        double spanX = Math.Max(maxX - minX, 60);
+        double spanZ = Math.Max(maxY - minY, 60);
+        double gap = spanX * 0.15;
+        double centerX = (minX + maxX) / 2;
+        double centerZ = (minY + maxY) / 2;
+        double markerSize = ScatterMarkerSize();
+
+        _processingPinnCompareDataGroup.Children.Add(CreateBasePlateModel(spanX * 2 + gap, spanZ));
+
+        AddSurfaceCubes(_processingPinnCompareDataGroup, pinn.X, pinn.Y, trueGrid,
+            Color.FromRgb(46, 85, 164), centerX, centerZ, markerSize, -spanX / 2 - gap / 2, 0);
+        AddSurfaceCubes(_processingPinnCompareDataGroup, pinn.X, pinn.Y, predictedGrid,
+            Color.FromRgb(217, 107, 118), centerX, centerZ, markerSize, spanX / 2 + gap / 2, 0);
+    }
+
+    private static void AddSurfaceCubes(
+        Model3DGroup group,
+        double[] xValues,
+        double[] yValues,
+        double[,] values,
+        Color color,
+        double centerX,
+        double centerZ,
+        double markerSize,
+        double xOffset,
+        double zOffset)
+    {
+        MeshGeometry3D mesh = new();
+        for (int row = 0; row < values.GetLength(0); row++)
+        {
+            for (int column = 0; column < values.GetLength(1); column++)
+            {
+                double voltage = values[row, column];
+                if (double.IsNaN(voltage) || voltage < 0)
+                {
+                    continue;
+                }
+
+                double x = column < xValues.Length ? xValues[column] : 0;
+                double z = row < yValues.Length ? yValues[row] : 0;
+                AddCubeToMesh(
+                    mesh,
+                    x - centerX + xOffset,
+                    z - centerZ + zOffset,
+                    NormalizeVoltage(voltage) * SurfaceHeightUnit,
+                    markerSize);
+            }
+        }
+
+        if (mesh.Positions.Count > 0)
+        {
+            group.Children.Add(CreateColoredModel(mesh, color));
+        }
+    }
+
+    private void RenderErrorPlot()
+    {
+        ScottPlot.WPF.WpfPlot plot = ProcessingErrorPlot;
+        plot.Plot.Clear();
+        AnalysisPinn? pinn = _pythonAnalysisResult?.Pinn;
+        if (pinn?.True is null || pinn.Predicted is null)
+        {
+            plot.Plot.Title("误差分析图（未检测到 PINN 模型）");
+            plot.Refresh();
+            return;
+        }
+
+        double[,] trueGrid = ConvertNullableGrid(pinn.True);
+        double[,] predictedGrid = ConvertNullableGrid(pinn.Predicted);
+        List<double> residualIndex = new();
+        List<double> residuals = new();
+        int rows = Math.Min(trueGrid.GetLength(0), predictedGrid.GetLength(0));
+        int columns = Math.Min(trueGrid.GetLength(1), predictedGrid.GetLength(1));
+        for (int row = 0; row < rows; row++)
+        {
+            for (int column = 0; column < columns; column++)
+            {
+                double actual = trueGrid[row, column];
+                double predicted = predictedGrid[row, column];
+                if (double.IsNaN(actual) || double.IsNaN(predicted))
+                {
+                    continue;
+                }
+
+                residualIndex.Add(residualIndex.Count + 1);
+                residuals.Add(predicted - actual);
+            }
+        }
+
+        if (residuals.Count > 0)
+        {
+            var scatter = plot.Plot.Add.Scatter(residualIndex.ToArray(), residuals.ToArray());
+            scatter.Color = ScottPlot.Color.FromHex("#D96B76");
+            scatter.LineWidth = 1.5f;
+            scatter.MarkerSize = 3f;
+
+            var zeroLine = plot.Plot.Add.HorizontalLine(0);
+            zeroLine.LineColor = ScottPlot.Color.FromHex("#8A93A0");
+            zeroLine.LineWidth = 1.5f;
+        }
+
+        plot.Plot.Title($"误差分析图 · RMSE {pinn.Rmse:F4} · MAE {pinn.Mae:F4}");
+        plot.Plot.XLabel("测点序号");
+        plot.Plot.YLabel("残差 (预测 − 真实)");
+        // 同拉普拉斯直方图：显式按当前数据自适应坐标轴，避免沿用旧范围导致图像变形。
+        plot.Plot.Axes.AutoScale();
+        plot.Refresh();
+    }
+
+    private static double[,] ConvertNullableGrid(double?[][]? source)
+    {
+        if (source is null || source.Length == 0)
+        {
+            return new double[0, 0];
+        }
+
+        int rows = source.Length;
+        int columns = source[0]?.Length ?? 0;
+        double[,] result = new double[rows, columns];
+        for (int row = 0; row < rows; row++)
+        {
+            double?[]? line = source[row];
+            if (line is null)
+            {
+                continue;
+            }
+
+            for (int column = 0; column < columns && column < line.Length; column++)
+            {
+                result[row, column] = line[column] ?? double.NaN;
+            }
+        }
+
+        return result;
+    }
+
+    private void ProcessingScatterControl_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (_processingScatterHeightScale is not null)
+        {
+            _processingScatterHeightScale.ScaleY = ProcessingScatterHeightScaleSlider.Value;
+        }
+    }
+
     private void RefreshPortList()
     {
         string[] ports = SerialPort.GetPortNames().OrderBy(name => name).ToArray();
@@ -973,6 +1950,7 @@ public partial class MainWindow : Window
             SetProcessingGridFromCurrentScan();
             RenderProcessingVisuals();
             ProcessingDataSummaryTextBlock.Text = "数据来源：当前扫描结果。";
+            RefreshPythonAnalysisAsync();
         }
     }
 
@@ -1699,7 +2677,7 @@ private void LoadPresetList(string? selectPresetName = null)
                 CurrentPageHintTextBlock.Text = "查看点位明细、扫描日志，并从这里导出 CSV。";
                 break;            case "Processing":
                 CurrentPageTitleTextBlock.Text = "数据处理";
-                CurrentPageHintTextBlock.Text = "根据当前扫描或导入的测量数据生成热力图、3D 柱形图和拉普拉斯分布图。";
+                CurrentPageHintTextBlock.Text = "根据当前扫描或导入的测量数据生成热力图、3D 柱形图、电场矢量、3D 分类散点、拉普拉斯分布与 PINN 拟合图。";
                 break;
 
             default:
